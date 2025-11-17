@@ -1,4 +1,4 @@
-@echo off
+@echo on
 REM install_karmalentil.bat
 REM Windows installation script for KarmaLentil
 
@@ -39,79 +39,88 @@ echo.
 set /p choice="Choice [1]: "
 if "%choice%"=="" set choice=1
 
-if "%choice%"=="1" (
-    REM Create packages directory
-    if not exist "%HOUDINI_USER_DIR%\packages" mkdir "%HOUDINI_USER_DIR%\packages"
+if "%choice%"=="1" goto option1
+if "%choice%"=="2" goto option2
+goto invalid
 
-    REM Create package JSON
-    set PACKAGE_FILE=%HOUDINI_USER_DIR%\packages\karmalentil.json
+:option1
+REM Create packages directory
+if not exist "%HOUDINI_USER_DIR%\packages" mkdir "%HOUDINI_USER_DIR%\packages"
 
-    (
-        echo {
-        echo     "env": [
-        echo         {
-        echo             "KARMALENTIL_PATH": "%SCRIPT_DIR:\=/%"
-        echo         },
-        echo         {
-        echo             "KARMALENTIL": "$KARMALENTIL_PATH"
-        echo         },
-        echo         {
-        echo             "HOUDINI_PATH": "$KARMALENTIL_PATH;&"
-        echo         },
-        echo         {
-        echo             "PYTHONPATH": "$KARMALENTIL_PATH/python;&"
-        echo         }
-        echo     ]
-        echo }
-    ) > "%PACKAGE_FILE%"
+REM Create package JSON
+set PACKAGE_FILE=%HOUDINI_USER_DIR%\packages\karmalentil.json
 
-    echo.
-    echo Package file created: %PACKAGE_FILE%
-    echo.
-    echo Installation complete!
-    echo.
-    echo Next steps:
-    echo   1. Launch Houdini
-    echo   2. Find 'karmalentil' shelf
-    echo   3. Click 'Lentil Camera' to create a camera
-    echo.
+(
+    echo {
+    echo     "env": [
+    echo         {
+    echo             "KARMALENTIL_PATH": "%SCRIPT_DIR:\=/%"
+    echo         },
+    echo         {
+    echo             "KARMALENTIL": "$KARMALENTIL_PATH"
+    echo         },
+    echo         {
+    echo             "HOUDINI_PATH": "$KARMALENTIL_PATH;&"
+    echo         },
+    echo         {
+    echo             "PYTHONPATH": "$KARMALENTIL_PATH/python;&"
+    echo         }
+    echo     ]
+    echo }
+) > "%PACKAGE_FILE%"
 
-) else if "%choice%"=="2" (
-    REM Add to houdini.env
-    set ENV_FILE=%HOUDINI_USER_DIR%\houdini.env
+echo.
+echo Package file created: %PACKAGE_FILE%
+echo.
+echo Installation complete!
+echo.
+echo Next steps:
+echo   1. Launch Houdini
+echo   2. Find 'karmalentil' shelf
+echo   3. Click 'Lentil Camera' to create a camera
+echo.
 
-    REM Backup existing env file
-    if exist "%ENV_FILE%" (
-        copy "%ENV_FILE%" "%ENV_FILE%.backup" >nul
-        echo Backed up existing houdini.env
-    )
+goto end
 
-    REM Add KarmaLentil configuration
-    (
-        echo.
-        echo # KarmaLentil - Polynomial Optics Plugin
-        echo KARMALENTIL_PATH = "%SCRIPT_DIR:\=/%"
-        echo KARMALENTIL = "$KARMALENTIL_PATH"
-        echo HOUDINI_PATH = "$KARMALENTIL_PATH;&"
-        echo PYTHONPATH = "$KARMALENTIL_PATH/python;&"
-    ) >> "%ENV_FILE%"
+:option2
+REM Add to houdini.env
+set ENV_FILE=%HOUDINI_USER_DIR%\houdini.env
 
-    echo.
-    echo Updated houdini.env: %ENV_FILE%
-    echo.
-    echo Installation complete!
-    echo.
-    echo Next steps:
-    echo   1. Restart Houdini (required)
-    echo   2. Find 'karmalentil' shelf
-    echo   3. Click 'Lentil Camera' to create a camera
-    echo.
-
-) else (
-    echo Invalid choice. Exiting.
-    pause
-    exit /b 1
+REM Backup existing env file
+if exist "%ENV_FILE%" (
+    copy "%ENV_FILE%" "%ENV_FILE%.backup" >nul
+    echo Backed up existing houdini.env
 )
+
+REM Add KarmaLentil configuration
+(
+    echo.
+    echo # KarmaLentil - Polynomial Optics Plugin
+    echo KARMALENTIL_PATH = "%SCRIPT_DIR:\=/%"
+    echo KARMALENTIL = "$KARMALENTIL_PATH"
+    echo HOUDINI_PATH = "$KARMALENTIL_PATH;&"
+    echo PYTHONPATH = "$KARMALENTIL_PATH/python;&"
+) >> "%ENV_FILE%"
+
+echo.
+echo Updated houdini.env: %ENV_FILE%
+echo.
+echo Installation complete!
+echo.
+echo Next steps:
+echo   1. Restart Houdini (required)
+echo   2. Find 'karmalentil' shelf
+echo   3. Click 'Lentil Camera' to create a camera
+echo.
+
+goto end
+
+:invalid
+echo Invalid choice. Exiting.
+pause
+exit /b 1
+
+:end
 
 echo ==========================================
 echo For help, see: %SCRIPT_DIR%\README.md
