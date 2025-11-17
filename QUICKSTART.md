@@ -41,7 +41,15 @@ print(hou.getenv("KARMALENTIL"))  # Should show installation path
 
 ## 3. Create Lentil Camera (30 seconds)
 
-**Using Shelf Tool (Easiest)**:
+**Method A: Drop-in HDA** (Recommended):
+
+1. Create a **LOP network** at `/stage` level (or use existing one)
+2. Inside the network, press **TAB**
+3. Search for **"karmalentil"** or "lentil camera"
+4. Select **KarmaLentil Camera** from menu
+5. Place it and adjust parameters in "Lentil Lens" tab
+
+**Method B: Shelf Tool** (Complete Setup):
 
 1. Find the **karmalentil** shelf at the top of Houdini
 2. Click **"Lentil Camera"** button
@@ -52,16 +60,7 @@ print(hou.getenv("KARMALENTIL"))  # Should show installation path
    - Karma render settings configured
    - Viewport set to Karma rendering
 
-**Manual Python Setup** (Alternative):
-
-In Houdini's Python Shell:
-
-```python
-import sys
-sys.path.append('/path/to/karmalentil/python')
-import setup_lentil_lops
-lop_network, camera = setup_lentil_lops.main()
-```
+**Note**: If the HDA isn't found, the shelf tool will offer to build it automatically.
 
 ## 4. View in Viewport (Immediate)
 

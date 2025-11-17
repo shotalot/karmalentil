@@ -14,6 +14,9 @@
         },
         {
             "PYTHONPATH": "$KARMALENTIL_PATH/python:&"
+        },
+        {
+            "HOUDINI_OTLSCAN_PATH": "$KARMALENTIL_PATH/otls:&"
         }
     ],
 

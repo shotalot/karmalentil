@@ -8,14 +8,14 @@ Port of [lentil](https://github.com/zpelgrims/lentil) from Arnold to Houdini Kar
 
 ## Features
 
+- 🎯 **Drop-in HDA** - Just add to any LOP network and start rendering
 - ✨ **Real-time viewport integration** with Karma renderer
-- 🎯 Physically-based lens aberration modeling using polynomial optics
+- 🔬 Physically-based lens aberration modeling using polynomial optics
 - 🌈 Chromatic aberration support with RGB wavelength sampling
-- ✨ **Bidirectional filtering** for realistic bokeh with preserved highlights (real-time and post-process)
+- ✨ **Bidirectional filtering** for realistic bokeh with preserved highlights
 - 📚 **Lens database system** with automatic lens loading
 - 🎨 **Custom aperture textures** for unique bokeh shapes (hearts, stars, logos, etc.)
 - 🎥 Real-world lens models based on patent data
-- 🔧 **Houdini Digital Asset (HDA)** for easy setup
 - 💫 Customizable aperture shapes (circular and polygonal bokeh)
 - ⚡ Integration with Karma XPU (GPU) and CPU renderers
 - 🚀 VEX-based implementation for performance
@@ -59,7 +59,29 @@ See **[PLUGIN_INSTALLATION.md](PLUGIN_INSTALLATION.md)** for detailed installati
 
 ## Usage
 
-### Using the Plugin
+### Method 1: Drop-in HDA (Recommended)
+
+KarmaLentil includes a complete camera HDA that you can drop directly into any LOP network:
+
+1. **Create a LOP network** at `/stage` level
+2. **Press TAB** inside the network
+3. **Search for "karmalentil"** or "lentil camera"
+4. **Drop it in** and adjust parameters
+5. **Render with Karma!**
+
+The HDA includes:
+- ✓ All lentil lens parameters built-in
+- ✓ Standard camera controls
+- ✓ Lens model selection
+- ✓ Bokeh customization
+- ✓ Bidirectional filtering
+- ✓ Complete help documentation
+
+**That's it!** No Python scripts, no complex setup - just drop the HDA and start rendering.
+
+**Note**: If the HDA isn't found on first use, the shelf tool will offer to build it automatically. Just click "Yes" and it will be created.
+
+### Method 2: Using Shelf Tools
 
 After installation, find the **karmalentil** shelf in Houdini:
 
@@ -71,26 +93,24 @@ After installation, find the **karmalentil** shelf in Houdini:
 5. Render!
 
 **Shelf Tools**:
-- 📷 **Lentil Camera** - Create complete setup
+- 📷 **Lentil Camera** - Create complete setup with example scene
 - 🎨 **Apply Bidirectional Filter** - Post-process renders
 - 📦 **Import Lens** - Add lenses from lentil repository
 - ❓ **Help** - Documentation and support
 
-### Manual Setup (Advanced)
+### Method 3: Manual HDA Build
 
-You can also set up lentil manually in LOPs:
+To manually build the HDA (rarely needed):
 
-1. Create a LOP network at `/stage`
-2. Add a Camera LOP node
-3. Run the Python setup script in Houdini's Python Shell:
-   ```python
-   import sys
-   sys.path.append('/path/to/karmalentil/python')
-   import setup_lentil_lops
-   lop_network, camera = setup_lentil_lops.main()
-   ```
-4. Adjust camera parameters in the "Lentil Lens" tab
-5. Render with Karma
+```python
+# In Houdini Python Shell
+import sys
+sys.path.append('/path/to/karmalentil/python')
+import create_lentil_camera_hda
+create_lentil_camera_hda.create_lentil_camera_hda()
+```
+
+The HDA will be created in `$KARMALENTIL/otls/` and automatically loaded.
 
 ### Bidirectional Filtering (Advanced Bokeh)
 
