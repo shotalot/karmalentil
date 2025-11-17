@@ -364,19 +364,28 @@ Original project: https://github.com/zpelgrims/lentil
 
         hda_definition.addSection('Help', help_text)
 
-        # Save the definition
+        # Save the definition with metadata changes
         hda_definition.save(hda_path)
 
         print("✓ Added help text and metadata")
         print()
 
+        # CRITICAL: After modifying and saving the definition, we need to reload it
+        # The in-memory definition may not match the file on disk
+        print("Reloading HDA from disk...")
+
+        # Uninstall the current in-memory version
+        if hda_definition.isInstalled():
+            hda_definition.uninstall()
+
+        # Reinstall from the file we just saved
+        hou.hda.installFile(hda_path)
+
+        print("✓ HDA reloaded from disk")
+        print()
+
         # DON'T destroy temp network yet - it will invalidate the HDA
         # The caller should destroy it AFTER successfully creating an instance
-
-        # Note: createDigitalAsset() already installs the HDA automatically
-        # No need to uninstall/reinstall - that can cause conflicts
-        print("✓ HDA automatically installed by createDigitalAsset()")
-        print()
 
         # DIAGNOSTIC: Verify the node type is actually available
         print("Verifying installation:")
