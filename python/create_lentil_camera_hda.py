@@ -72,178 +72,9 @@ def create_lentil_camera_hda():
 
     print(f"✓ Subnet created: {subnet.path()}")
 
-    # Now work with the camera parameters
-    # Note: Camera parameters might not exist until render time in LOPs
-    # So we'll just add our custom lentil parameters to the SUBNET
+    # Convert subnet to HDA FIRST, then add parameters to the definition
+    print("Converting subnet to HDA...")
 
-    # Get parameter template group from the subnet (not camera)
-    parm_template_group = subnet.parmTemplateGroup()
-
-    # Create Lentil Lens folder
-    lentil_folder = hou.FolderParmTemplate('lentil_folder', 'Lentil Lens')
-
-    # Enable toggle
-    lentil_folder.addParmTemplate(
-        hou.ToggleParmTemplate(
-            'enable_lentil',
-            'Enable Lentil',
-            default_value=True,
-            help='Enable lentil polynomial optics for realistic lens aberrations'
-        )
-    )
-
-    # Lens model menu
-    lentil_folder.addParmTemplate(
-        hou.MenuParmTemplate(
-            'lens_model',
-            'Lens Model',
-            menu_items=['double_gauss_50mm'],
-            menu_labels=['Double Gauss 50mm f/2.8'],
-            default_value=0,
-            help='Select lens model from database'
-        )
-    )
-
-    # Focal length
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'lentil_focal_length',
-            'Focal Length (mm)',
-            1,
-            default_value=[50.0],
-            min=1.0,
-            max=500.0,
-            help='Lens focal length in millimeters'
-        )
-    )
-
-    # F-stop
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'lentil_fstop',
-            'F-Stop',
-            1,
-            default_value=[2.8],
-            min=0.5,
-            max=64.0,
-            help='Aperture f-stop (lower = more DOF)'
-        )
-    )
-
-    # Focus distance
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'lentil_focus_distance',
-            'Focus Distance (mm)',
-            1,
-            default_value=[5000.0],
-            min=1.0,
-            help='Focus distance in millimeters'
-        )
-    )
-
-    # Sensor width
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'lentil_sensor_width',
-            'Sensor Width (mm)',
-            1,
-            default_value=[36.0],
-            min=1.0,
-            max=100.0,
-            help='Camera sensor width (36mm = full-frame)'
-        )
-    )
-
-    # Chromatic aberration
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'chromatic_aberration',
-            'Chromatic Aberration',
-            1,
-            default_value=[1.0],
-            min=0.0,
-            max=2.0,
-            help='Chromatic aberration intensity (0=off, 1=normal)'
-        )
-    )
-
-    # Bokeh blades
-    lentil_folder.addParmTemplate(
-        hou.IntParmTemplate(
-            'bokeh_blades',
-            'Bokeh Blades',
-            1,
-            default_value=[0],
-            min=0,
-            max=16,
-            help='Number of aperture blades (0=circular)'
-        )
-    )
-
-    # Bokeh rotation
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'bokeh_rotation',
-            'Bokeh Rotation',
-            1,
-            default_value=[0.0],
-            min=0.0,
-            max=360.0,
-            help='Aperture rotation in degrees'
-        )
-    )
-
-    # Aperture texture
-    lentil_folder.addParmTemplate(
-        hou.StringParmTemplate(
-            'aperture_texture',
-            'Aperture Texture',
-            1,
-            default_value=[''],
-            string_type=hou.stringParmType.FileReference,
-            file_type=hou.fileType.Image,
-            help='Custom aperture texture for unique bokeh shapes'
-        )
-    )
-
-    # Add separator
-    lentil_folder.addParmTemplate(
-        hou.SeparatorParmTemplate('sep1')
-    )
-
-    # Bidirectional toggle
-    lentil_folder.addParmTemplate(
-        hou.ToggleParmTemplate(
-            'enable_bidirectional',
-            'Enable Bidirectional',
-            default_value=True,
-            help='Enable bidirectional filtering for realistic bokeh highlights'
-        )
-    )
-
-    # Bokeh intensity
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'bokeh_intensity',
-            'Bokeh Intensity',
-            1,
-            default_value=[1.0],
-            min=0.0,
-            max=3.0,
-            help='Bokeh highlight intensity multiplier'
-        )
-    )
-
-    # Add folder to template group
-    parm_template_group.append(lentil_folder)
-
-    # Apply to subnet
-    subnet.setParmTemplateGroup(parm_template_group)
-
-    print("✓ Created subnet with lentil parameters")
-
-    # Now create the HDA from the subnet
     # Select the subnet node
     subnet.setSelected(True, clear_all_selected=True)
 
@@ -252,8 +83,7 @@ def create_lentil_camera_hda():
     hda_label = "KarmaLentil Camera"
 
     try:
-        # Create the HDA from the subnet
-        # Note: createDigitalAsset() returns the node instance, not the definition
+        # Create the HDA from the subnet (plain, no custom parameters yet)
         hda_node = subnet.createDigitalAsset(
             name=hda_node_type_name,
             hda_file_name=hda_path,
@@ -263,11 +93,181 @@ def create_lentil_camera_hda():
         )
 
         print(f"✓ Created HDA: {hda_node_type_name}")
-        print(f"✓ Saved to: {hda_path}")
         print()
 
-        # Get the actual HDA definition from the node's type
+        # Get the HDA definition
         hda_definition = hda_node.type().definition()
+
+        # NOW add parameters to the HDA definition
+        print("Adding lentil parameters to HDA...")
+
+        # Get the HDA's parameter template group
+        parm_template_group = hda_definition.parmTemplateGroup()
+
+        # Create Lentil Lens folder
+        lentil_folder = hou.FolderParmTemplate('lentil_folder', 'Lentil Lens')
+
+        # Enable toggle
+        lentil_folder.addParmTemplate(
+            hou.ToggleParmTemplate(
+                'enable_lentil',
+                'Enable Lentil',
+                default_value=True,
+                help='Enable lentil polynomial optics for realistic lens aberrations'
+            )
+        )
+
+        # Lens model menu
+        lentil_folder.addParmTemplate(
+            hou.MenuParmTemplate(
+                'lens_model',
+                'Lens Model',
+                menu_items=['double_gauss_50mm'],
+                menu_labels=['Double Gauss 50mm f/2.8'],
+                default_value=0,
+                help='Select lens model from database'
+            )
+        )
+
+        # Focal length
+        lentil_folder.addParmTemplate(
+            hou.FloatParmTemplate(
+                'lentil_focal_length',
+                'Focal Length (mm)',
+                1,
+                default_value=[50.0],
+                min=1.0,
+                max=500.0,
+                help='Lens focal length in millimeters'
+            )
+        )
+
+        # F-stop
+        lentil_folder.addParmTemplate(
+            hou.FloatParmTemplate(
+                'lentil_fstop',
+                'F-Stop',
+                1,
+                default_value=[2.8],
+                min=0.5,
+                max=64.0,
+                help='Aperture f-stop (lower = more DOF)'
+            )
+        )
+
+        # Focus distance
+        lentil_folder.addParmTemplate(
+            hou.FloatParmTemplate(
+                'lentil_focus_distance',
+                'Focus Distance (mm)',
+                1,
+                default_value=[5000.0],
+                min=1.0,
+                help='Focus distance in millimeters'
+            )
+        )
+
+        # Sensor width
+        lentil_folder.addParmTemplate(
+            hou.FloatParmTemplate(
+                'lentil_sensor_width',
+                'Sensor Width (mm)',
+                1,
+                default_value=[36.0],
+                min=1.0,
+                max=100.0,
+                help='Camera sensor width (36mm = full-frame)'
+            )
+        )
+
+        # Chromatic aberration
+        lentil_folder.addParmTemplate(
+            hou.FloatParmTemplate(
+                'chromatic_aberration',
+                'Chromatic Aberration',
+                1,
+                default_value=[1.0],
+                min=0.0,
+                max=2.0,
+                help='Chromatic aberration intensity (0=off, 1=normal)'
+            )
+        )
+
+        # Bokeh blades
+        lentil_folder.addParmTemplate(
+            hou.IntParmTemplate(
+                'bokeh_blades',
+                'Bokeh Blades',
+                1,
+                default_value=[0],
+                min=0,
+                max=16,
+                help='Number of aperture blades (0=circular)'
+            )
+        )
+
+        # Bokeh rotation
+        lentil_folder.addParmTemplate(
+            hou.FloatParmTemplate(
+                'bokeh_rotation',
+                'Bokeh Rotation',
+                1,
+                default_value=[0.0],
+                min=0.0,
+                max=360.0,
+                help='Aperture rotation in degrees'
+            )
+        )
+
+        # Aperture texture
+        lentil_folder.addParmTemplate(
+            hou.StringParmTemplate(
+                'aperture_texture',
+                'Aperture Texture',
+                1,
+                default_value=[''],
+                string_type=hou.stringParmType.FileReference,
+                file_type=hou.fileType.Image,
+                help='Custom aperture texture for unique bokeh shapes'
+            )
+        )
+
+        # Add separator
+        lentil_folder.addParmTemplate(
+            hou.SeparatorParmTemplate('sep1')
+        )
+
+        # Bidirectional toggle
+        lentil_folder.addParmTemplate(
+            hou.ToggleParmTemplate(
+                'enable_bidirectional',
+                'Enable Bidirectional',
+                default_value=True,
+                help='Enable bidirectional filtering for realistic bokeh highlights'
+            )
+        )
+
+        # Bokeh intensity
+        lentil_folder.addParmTemplate(
+            hou.FloatParmTemplate(
+                'bokeh_intensity',
+                'Bokeh Intensity',
+                1,
+                default_value=[1.0],
+                min=0.0,
+                max=3.0,
+                help='Bokeh highlight intensity multiplier'
+            )
+        )
+
+        # Add folder to HDA definition's parameter template group
+        parm_template_group.append(lentil_folder)
+
+        # Apply parameters to the HDA definition (not the subnet instance)
+        hda_definition.setParmTemplateGroup(parm_template_group)
+
+        print("✓ Added lentil parameters to HDA definition")
+        print()
 
         # Set HDA metadata
         hda_definition.setIcon('NETWORKS_camera')
