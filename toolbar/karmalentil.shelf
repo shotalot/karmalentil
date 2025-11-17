@@ -34,10 +34,18 @@ try:
 
     # Create regular camera node (lentil parameters are automatically added!)
     camera = lop_network.createNode('camera', 'lentil_camera')
-    camera.parm('primpath').set('/cameras/lentil_camera')
 
-    # Enable lentil by default
-    camera.parm('enable_lentil').set(1)
+    # Set camera path (check if parameter exists)
+    if camera.parm('primpath'):
+        camera.parm('primpath').set('/cameras/lentil_camera')
+
+    # Enable lentil by default (check if parameter exists - might not be added yet)
+    if camera.parm('enable_lentil'):
+        camera.parm('enable_lentil').set(1)
+    else:
+        print("Warning: Lentil parameters not found on camera node")
+        print("This might mean the startup script hasn't run yet or failed")
+        print("Try restarting Houdini or check the console for errors")
 
     # Add example scene geometry
     sphere1 = lop_network.createNode('sphere', 'sphere_foreground')

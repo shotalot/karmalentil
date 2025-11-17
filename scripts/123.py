@@ -13,6 +13,9 @@ def add_lentil_parameters_to_cameras():
     """
     Extend all LOP camera nodes with lentil parameters
     This runs on startup and modifies the camera node type
+
+    NOTE: This approach may not work with built-in node types in Houdini.
+    If parameters don't appear, we'll need to use a different approach.
     """
     try:
         # Get the LOP camera node type
@@ -23,8 +26,20 @@ def add_lentil_parameters_to_cameras():
             print("KarmaLentil: Warning - Could not find 'camera' node type in LOPs")
             return False
 
-        # Get existing parameter template group
-        ptg = camera_type.parmTemplateGroup()
+        print(f"KarmaLentil: Found camera type: {camera_type}")
+        print(f"KarmaLentil: Camera type category: {camera_type.category().name()}")
+
+        # CRITICAL: Check if we can modify this node type
+        # Built-in node types might not be modifiable
+        try:
+            # Get existing parameter template group
+            ptg = camera_type.parmTemplateGroup()
+            print(f"KarmaLentil: Retrieved parameter template group (has {len(ptg.parmTemplates())} templates)")
+        except Exception as e:
+            print(f"KarmaLentil: ERROR - Cannot get parameter template group: {e}")
+            print("KarmaLentil: Built-in node types cannot be modified this way")
+            print("KarmaLentil: You'll need to use a different approach (HDA or callbacks)")
+            return False
 
         # Check if lentil folder already exists
         if ptg.find("lentil_folder"):
@@ -189,12 +204,23 @@ def add_lentil_parameters_to_cameras():
 
         # Add folder to camera node type's parameter template group
         ptg.append(lentil_folder)
+        print("KarmaLentil: Added lentil folder to parameter template group")
 
         # Apply modified parameter template group to camera node type
-        camera_type.setParmTemplateGroup(ptg)
-
-        print("KarmaLentil: ✓ Added lentil parameters to all camera nodes")
-        return True
+        # NOTE: This will FAIL for built-in node types!
+        try:
+            camera_type.setParmTemplateGroup(ptg)
+            print("KarmaLentil: ✓ Successfully modified camera node type")
+            print("KarmaLentil: ✓ Added lentil parameters to all camera nodes")
+            return True
+        except Exception as e:
+            print(f"KarmaLentil: ERROR - Cannot modify built-in camera node type: {e}")
+            print("KarmaLentil: You cannot modify built-in Houdini node types")
+            print("KarmaLentil: Alternative approaches:")
+            print("  1. Use the HDA approach (custom node type)")
+            print("  2. Use OnCreated callbacks to add parameters")
+            print("  3. Create a custom camera node type")
+            return False
 
     except Exception as e:
         print(f"KarmaLentil: Error adding lentil parameters: {e}")
