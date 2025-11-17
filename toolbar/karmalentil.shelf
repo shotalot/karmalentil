@@ -59,8 +59,28 @@ try:
     try:
         # Configure camera for better DOF visibility
         camera.parm('tz').set(10)  # Move camera back
-        camera.parm('resx').set(1920)
-        camera.parm('resy').set(1080)
+
+        # Set resolution - LOP cameras might use different parameter names
+        # Let's find the right ones
+        print("DEBUG: Looking for resolution parameters on camera...")
+        all_parms = [p.name() for p in camera.parms()]
+        res_parms = [p for p in all_parms if any(keyword in p.lower() for keyword in ['res', 'resolution', 'width', 'height'])]
+        print(f"  Resolution-related parameters: {res_parms}")
+
+        # Try common resolution parameter names
+        if camera.parm('resx'):
+            camera.parm('resx').set(1920)
+            camera.parm('resy').set(1080)
+            print("  Set resx/resy to 1920x1080")
+        elif camera.parm('resolutionx'):
+            camera.parm('resolutionx').set(1920)
+            camera.parm('resolutiony').set(1080)
+            print("  Set resolutionx/y to 1920x1080")
+        elif camera.parm('resolution'):
+            camera.parm('resolution').set(1920)
+            print("  Set resolution to 1920")
+        else:
+            print("  WARNING: Could not find resolution parameters!")
 
         # Foreground sphere (close - will be blurry)
         sphere_near = lop_network.createNode('sphere', 'sphere_near')
