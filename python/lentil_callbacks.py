@@ -107,14 +107,18 @@ def apply_lentil_to_camera(node):
         node.parm('depthoffield').set(1)
 
     # Set aperture (sensor width)
-    # LOP cameras use camelCase: 'horizontalAperture' not 'aperture'!
-    aperture_cm = sensor_width / 10.0  # mm to cm
-    if node.parm('horizontalAperture'):
-        print(f"  Setting horizontalAperture to {aperture_cm}cm")
-        node.parm('horizontalAperture').set(aperture_cm)
-    elif node.parm('aperture'):
-        print(f"  Setting aperture to {aperture_cm}cm")
-        node.parm('aperture').set(aperture_cm)
+    # NOTE: Don't set this - it changes the field of view!
+    # The sensor_width parameter is used for polynomial calculations,
+    # but we shouldn't override the camera's existing sensor size
+    # as it will change the framing/zoom of the image.
+    #
+    # aperture_cm = sensor_width / 10.0  # mm to cm
+    # if node.parm('horizontalAperture'):
+    #     print(f"  Setting horizontalAperture to {aperture_cm}cm")
+    #     node.parm('horizontalAperture').set(aperture_cm)
+    #
+    # For now, we'll leave the camera's sensor size alone
+    print(f"  (Keeping camera's existing sensor size to preserve framing)")
 
     print(f"  ✓ Applied DOF: focal={focal_length}mm, f/{fstop}, focus={focus_distance}mm")
     print(f"  TIP: Render or use Karma viewport to see depth of field effect")
