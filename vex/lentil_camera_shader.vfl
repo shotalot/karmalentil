@@ -1,0 +1,98 @@
+// KarmaLentil Camera Shader
+// Polynomial optics for realistic lens aberrations
+// Based on lentil by Zeno Pelgrims
+
+#pragma label enable_lentil "Enable Lentil"
+#pragma label lens_model "Lens Model"
+#pragma label lentil_focal_length "Focal Length (mm)"
+#pragma label lentil_fstop "F-Stop"
+#pragma label lentil_focus_distance "Focus Distance (mm)"
+#pragma label lentil_sensor_width "Sensor Width (mm)"
+#pragma label chromatic_aberration "Chromatic Aberration"
+#pragma label bokeh_blades "Bokeh Blades"
+#pragma label bokeh_rotation "Bokeh Rotation"
+#pragma label aperture_texture "Aperture Texture"
+#pragma label enable_bidirectional "Enable Bidirectional"
+#pragma label bokeh_intensity "Bokeh Intensity"
+
+// Camera shader for Karma
+cvex
+lentil_camera(
+    // Outputs
+    export vector o_direction = {0, 0, 0};
+    export vector o_origin = {0, 0, 0};
+    export float o_importance = 1.0;
+
+    // Inputs
+    vector i_direction = {0, 0, -1};
+    vector i_origin = {0, 0, 0};
+    float i_lensradius = 0;
+
+    // Lentil parameters
+    int enable_lentil = 1;
+    string lens_model = "double_gauss_50mm";
+    float lentil_focal_length = 50.0;
+    float lentil_fstop = 2.8;
+    float lentil_focus_distance = 5000.0;
+    float lentil_sensor_width = 36.0;
+    float chromatic_aberration = 1.0;
+    int bokeh_blades = 0;
+    float bokeh_rotation = 0.0;
+    string aperture_texture = "";
+    int enable_bidirectional = 1;
+    float bokeh_intensity = 1.0;
+)
+{
+    // Initialize outputs with input values
+    o_direction = i_direction;
+    o_origin = i_origin;
+    o_importance = 1.0;
+
+    // If lentil is disabled, pass through standard camera
+    if (!enable_lentil) {
+        return;
+    }
+
+    // TODO: Implement polynomial optics
+    // For now, this is a placeholder that demonstrates the structure
+
+    // Calculate sensor position (normalized coordinates)
+    float sensor_x = 0.0;
+    float sensor_y = 0.0;
+
+    // Sample aperture position
+    float aperture_u = 0.0;
+    float aperture_v = 0.0;
+
+    // Apply aperture shape (polygonal bokeh)
+    if (bokeh_blades > 0) {
+        // Sample polygonal aperture
+        float angle = bokeh_rotation * M_PI / 180.0;
+        // TODO: Implement polygonal sampling
+    } else if (aperture_texture != "") {
+        // Sample custom aperture texture
+        // TODO: Implement texture sampling
+    }
+
+    // Calculate aperture radius based on f-stop
+    float aperture_radius = lentil_focal_length / (2.0 * lentil_fstop);
+
+    // Apply polynomial optics transformation
+    // TODO: Load lens data from database and apply polynomial evaluation
+
+    // For now, pass through with simple DOF
+    o_direction = i_direction;
+    o_origin = i_origin;
+    o_importance = 1.0;
+
+    // Apply bidirectional filtering weight
+    if (enable_bidirectional) {
+        // Adjust importance based on bokeh intensity
+        o_importance *= bokeh_intensity;
+    }
+
+    // Apply chromatic aberration
+    if (chromatic_aberration > 0.0) {
+        // TODO: Wavelength-dependent ray modification
+    }
+}

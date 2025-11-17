@@ -22,7 +22,7 @@ if karmalentil_path:
     if python_path not in sys.path:
         sys.path.insert(0, python_path)
 
-# Create lentil camera using HDA
+# Create lentil camera setup (no HDA needed!)
 try:
     # Get or create stage
     stage = hou.node('/stage')
@@ -32,130 +32,85 @@ try:
     # Create LOP network
     lop_network = stage.createNode('lopnet', 'lentil_stage')
 
-    # Try to create lentil camera HDA
-    camera = None
-    try:
-        camera = lop_network.createNode('karmalentil::camera::1.0', 'lentil_camera')
-    except hou.OperationFailed:
-        # HDA doesn't exist yet
-        pass
+    # Create regular camera node (lentil parameters are automatically added!)
+    camera = lop_network.createNode('camera', 'lentil_camera')
+    camera.parm('primpath').set('/cameras/lentil_camera')
 
-    if not camera:
-        # HDA not found, offer to build it
-        if hou.ui.displayMessage(
-            "KarmaLentil Camera HDA not found.\n\n"
-            "Would you like to build it now?\n"
-            "(This only needs to be done once)",
-            buttons=("Yes", "No"),
-            severity=hou.severityType.Warning,
-            title="KarmaLentil"
-        ) == 0:
-            # Build the HDA
-            import create_lentil_camera_hda
-            result = create_lentil_camera_hda.create_lentil_camera_hda()
+    # Enable lentil by default
+    camera.parm('enable_lentil').set(1)
 
-            # Unpack result (definition, temp_lop)
-            if result and len(result) == 2:
-                hda_def, temp_lop = result
-            else:
-                hda_def, temp_lop = None, None
+    # Add example scene geometry
+    sphere1 = lop_network.createNode('sphere', 'sphere_foreground')
+    sphere1.setInput(0, camera)
+    sphere1.parm('primpath').set('/geo/sphere_fg')
+    sphere1.parm('radius').set(0.5)
+    sphere1.parm('ty').set(0)
+    sphere1.parm('tz').set(0)
 
-            # Try creating again
-            try:
-                camera = lop_network.createNode('karmalentil::camera::1.0', 'lentil_camera')
+    sphere2 = lop_network.createNode('sphere', 'sphere_background')
+    sphere2.setInput(0, sphere1)
+    sphere2.parm('primpath').set('/geo/sphere_bg')
+    sphere2.parm('radius').set(0.3)
+    sphere2.parm('ty').set(0)
+    sphere2.parm('tz').set(-3)
 
-                # SUCCESS! Now we can safely destroy the temp network
-                if temp_lop:
-                    temp_lop.destroy()
+    grid = lop_network.createNode('grid', 'ground')
+    grid.setInput(0, sphere2)
+    grid.parm('primpath').set('/geo/ground')
+    grid.parm('scale').set(10)
+    grid.parm('ty').set(-1)
 
-            except hou.OperationFailed:
-                camera = None
-                # Failed to create - but don't destroy temp yet, might need it for debugging
-                if temp_lop:
-                    print("Warning: Failed to create camera instance, keeping temp network for debugging")
-                    print("  Temp network: {}".format(temp_lop.path()))
+    # Add dome light
+    dome_light = lop_network.createNode('domelight', 'dome_light')
+    dome_light.setInput(0, grid)
+    dome_light.parm('primpath').set('/lights/dome')
+    dome_light.parm('intensity').set(1.0)
 
-    if camera:
-        # Add example scene geometry (optional)
-        sphere1 = lop_network.createNode('sphere', 'sphere_foreground')
-        sphere1.setInput(0, camera)
-        sphere1.parm('primpath').set('/geo/sphere_fg')
-        sphere1.parm('radius').set(0.5)
-        sphere1.parm('ty').set(0)
-        sphere1.parm('tz').set(0)
+    # Add Karma render settings
+    render_settings = lop_network.createNode('karmarenderproperties', 'karma_settings')
+    render_settings.setInput(0, dome_light)
+    render_settings.parm('camera').set('/cameras/lentil_camera')
+    render_settings.parm('pixelsamples').set(1024)
 
-        sphere2 = lop_network.createNode('sphere', 'sphere_background')
-        sphere2.setInput(0, sphere1)
-        sphere2.parm('primpath').set('/geo/sphere_bg')
-        sphere2.parm('radius').set(0.3)
-        sphere2.parm('ty').set(0)
-        sphere2.parm('tz').set(-3)
+    # Add Karma render node
+    karma = lop_network.createNode('karma', 'render')
+    karma.setInput(0, render_settings)
+    karma.parm('camera').set('/cameras/lentil_camera')
+    karma.parm('picture').set('$HIP/render/$HIPNAME.$F4.exr')
+    karma.setDisplayFlag(True)
 
-        grid = lop_network.createNode('grid', 'ground')
-        grid.setInput(0, sphere2)
-        grid.parm('primpath').set('/geo/ground')
-        grid.parm('scale').set(10)
-        grid.parm('ty').set(-1)
+    # Layout
+    lop_network.layoutChildren()
 
-        # Add dome light
-        dome_light = lop_network.createNode('domelight', 'dome_light')
-        dome_light.setInput(0, grid)
-        dome_light.parm('primpath').set('/lights/dome')
-        dome_light.parm('intensity').set(1.0)
+    # Select the camera
+    camera.setSelected(True, clear_all_selected=True)
 
-        # Add Karma render settings
-        render_settings = lop_network.createNode('karmarenderproperties', 'karma_settings')
-        render_settings.setInput(0, dome_light)
-        render_settings.parm('camera').set('/cameras/lentil_camera')
-        render_settings.parm('pixelsamples').set(1024)
+    # Set viewport to show the LOP network
+    scene_viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
+    if scene_viewer:
+        scene_viewer.setPwd(lop_network)
+        # Try to set to Karma render mode
+        try:
+            viewport = scene_viewer.curViewport()
+            viewport.settings().setDisplayMode(hou.displayMode.RenderViewport)
+        except:
+            pass
 
-        # Add Karma render node
-        karma = lop_network.createNode('karma', 'render')
-        karma.setInput(0, render_settings)
-        karma.parm('camera').set('/cameras/lentil_camera')
-        karma.parm('picture').set('$HIP/render/$HIPNAME.$F4.exr')
-        karma.setDisplayFlag(True)
-        karma.setRenderFlag(True)
-
-        # Layout
-        lop_network.layoutChildren()
-
-        # Select the camera
-        camera.setSelected(True, clear_all_selected=True)
-
-        # Set viewport to show the LOP network
-        scene_viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
-        if scene_viewer:
-            scene_viewer.setPwd(lop_network)
-            # Try to set to Karma render mode
-            try:
-                viewport = scene_viewer.curViewport()
-                viewport.settings().setDisplayMode(hou.displayMode.RenderViewport)
-            except:
-                pass
-
-        hou.ui.displayMessage(
-            "Lentil Camera Created!\n\n"
-            "LOP Network: {}\n"
-            "Camera Node: {}\n"
-            "USD Path: /cameras/lentil_camera\n\n"
-            "Adjust parameters in the camera's 'Lentil Lens' tab.\n"
-            "Viewport is configured for Karma rendering.".format(
-                lop_network.path(),
-                camera.path()
-            ),
-            severity=hou.severityType.Message,
-            title="KarmaLentil"
-        )
-    else:
-        hou.ui.displayMessage(
-            "Failed to create Lentil Camera HDA.\n\n"
-            "Please run the HDA builder script manually:\n"
-            "import create_lentil_camera_hda\n"
-            "create_lentil_camera_hda.create_lentil_camera_hda()",
-            severity=hou.severityType.Error,
-            title="KarmaLentil"
-        )
+    hou.ui.displayMessage(
+        "Lentil Camera Created!\n\n"
+        "LOP Network: {}\n"
+        "Camera Node: {}\n"
+        "USD Path: /cameras/lentil_camera\n\n"
+        "✓ Lentil parameters automatically added\n"
+        "✓ Lentil enabled by default\n\n"
+        "Adjust parameters in the camera's 'Lentil Lens' tab.\n"
+        "Viewport is configured for Karma rendering.".format(
+            lop_network.path(),
+            camera.path()
+        ),
+        severity=hou.severityType.Message,
+        title="KarmaLentil"
+    )
 
 except Exception as e:
     hou.ui.displayMessage(
@@ -197,9 +152,9 @@ if not cam:
     )
 else:
     # Get parameters
-    focus = cam.evalParm("focus_distance") if cam.parm("focus_distance") else 1000.0
-    fstop = cam.evalParm("fstop") if cam.parm("fstop") else 2.8
-    focal = cam.evalParm("focal_length") if cam.parm("focal_length") else 50.0
+    focus = cam.evalParm("lentil_focus_distance") if cam.parm("lentil_focus_distance") else 5000.0
+    fstop = cam.evalParm("lentil_fstop") if cam.parm("lentil_fstop") else 2.8
+    focal = cam.evalParm("lentil_focal_length") if cam.parm("lentil_focal_length") else 50.0
 
     # Create dialog for file selection
     input_file = hou.ui.selectFile(
@@ -355,18 +310,18 @@ help_text = """
 KARMALENTIL - Polynomial Optics for Houdini Karma
 
 QUICK START:
-1. Click 'Lentil Camera' to create a complete setup
-2. Adjust parameters in camera's Lentil tabs
-3. Render with Karma
-4. (Optional) Apply bidirectional filter for ultimate quality
+1. Create any camera LOP node
+2. Open the 'Lentil Lens' tab (automatically added!)
+3. Enable 'Enable Lentil' toggle
+4. Adjust parameters and render with Karma
 
-DOCUMENTATION:
-- README.md - Project overview
-- VIEWPORT_INTEGRATION.md - Real-time viewport guide
-- USAGE.md - Complete parameter reference
-- BIDIRECTIONAL.md - Bidirectional filtering details
+OR use the shelf tool:
+1. Click 'Lentil Camera' for complete setup
+2. Done! Parameters already configured
 
 FEATURES:
+✓ Automatic parameter injection (no HDA!)
+✓ Works with ANY camera node
 ✓ Real-time viewport preview
 ✓ Polynomial lens aberrations
 ✓ Chromatic aberration
@@ -374,6 +329,12 @@ FEATURES:
 ✓ Custom bokeh shapes
 ✓ Lens database system
 ✓ GPU acceleration (Karma XPU)
+
+DOCUMENTATION:
+- README.md - Project overview
+- QUICKSTART.md - 5-minute tutorial
+- USAGE.md - Complete parameter reference
+- BIDIRECTIONAL.md - Bidirectional filtering details
 
 SUPPORT:
 - Documentation: $KARMALENTIL/
