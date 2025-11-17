@@ -1,0 +1,140 @@
+// KarmaLentil Lens Shader
+// Polynomial optics for realistic lens aberrations
+// For use with Karma CPU renderer (NOT Karma XPU)
+//
+// Based on lentil by Zeno Pelgrims
+// Adapted for Houdini Karma CVEX lens shader format
+
+#include <voplib.h>
+
+// Sample uniform disk
+function vector2 sample_disk(float u; float v)
+{
+    float r = sqrt(u);
+    float theta = v * 2.0 * M_PI;
+    return set(r * cos(theta), r * sin(theta));
+}
+
+// Sample polygonal aperture
+function vector2 sample_polygon(float u; float v; int sides; float rotation_deg)
+{
+    if (sides < 3) {
+        return sample_disk(u, v);
+    }
+
+    vector2 disk_sample = sample_disk(u, v);
+
+    // Rotate
+    float rot_rad = radians(rotation_deg);
+    float cos_r = cos(rot_rad);
+    float sin_r = sin(rot_rad);
+
+    vector2 rotated = set(
+        disk_sample.x * cos_r - disk_sample.y * sin_r,
+        disk_sample.x * sin_r + disk_sample.y * cos_r
+    );
+
+    // Scale to inscribed circle of polygon
+    float scale = cos(M_PI / float(sides));
+    return rotated / scale;
+}
+
+// Main lens shader - CVEX signature for Karma
+cvex karma_lentil_lens(
+    // Camera space ray outputs
+    export vector P = 0;           // Ray origin
+    export vector I = {0, 0, -1};  // Ray direction
+    export float importance = 1.0;  // Ray importance for sampling
+
+    // Lens shader inputs from Karma
+    float sx = 0;                   // Screen X [-1, 1]
+    float sy = 0;                   // Screen Y [-1, 1]
+    float randx = 0;                // Random sample X [0, 1]
+    float randy = 0;                // Random sample Y [0, 1]
+    float Time = 0;                 // Shutter time [0, 1]
+
+    // Lentil parameters
+    int enable_lentil = 1;
+    float focal_length = 50.0;      // mm
+    float fstop = 2.8;
+    float focus_distance = 5000.0;  // mm
+    float sensor_width = 36.0;      // mm
+    float chromatic_aberration = 0.0;
+    int bokeh_blades = 0;
+    float bokeh_rotation = 0.0;
+    float bokeh_intensity = 1.0;
+)
+{
+    // If lentil disabled, use pinhole camera
+    if (!enable_lentil || fstop >= 64.0) {
+        // Pinhole: ray from origin through screen point
+        float aspect = 16.0 / 9.0;  // TODO: get from camera
+        P = {0, 0, 0};
+        I = normalize(set(sx, sy / aspect, -1.0));
+        importance = 1.0;
+        return;
+    }
+
+    // Convert units: mm to camera space (assume camera space = meters)
+    float focal_m = focal_length / 1000.0;
+    float focus_m = focus_distance / 1000.0;
+    float sensor_width_m = sensor_width / 1000.0;
+
+    // Calculate aperture radius from f-stop
+    float aperture_radius = (focal_length / (2.0 * fstop)) / 1000.0;  // to meters
+
+    // Sample aperture
+    vector2 aperture_sample;
+    if (bokeh_blades > 0) {
+        aperture_sample = sample_polygon(randx, randy, bokeh_blades, bokeh_rotation);
+    } else {
+        aperture_sample = sample_disk(randx, randy);
+    }
+    aperture_sample *= aperture_radius;
+
+    // Calculate sensor position from screen coordinates
+    float aspect = 16.0 / 9.0;  // TODO: get actual aspect ratio
+    float sensor_half_width = sensor_width_m * 0.5;
+    float sensor_half_height = sensor_half_width / aspect;
+
+    vector sensor_pos = set(
+        sx * sensor_half_width,
+        sy * sensor_half_height,
+        0.0
+    );
+
+    // Lens position (at focal length from sensor)
+    vector lens_pos = set(aperture_sample.x, aperture_sample.y, focal_m);
+
+    // Calculate focus point using thin lens formula
+    // 1/f = 1/s_o + 1/s_i
+    // For focus at distance d: s_o = focal_length, s_i = d
+
+    // Ray from sensor through lens
+    vector sensor_to_lens = lens_pos - sensor_pos;
+
+    // Project to focus plane
+    // The focus plane is at distance focus_m from lens
+    float t = focus_m / focal_m;
+    vector focus_point = sensor_pos + sensor_to_lens * t;
+
+    // Output ray: from lens position toward focus point
+    P = lens_pos;
+    I = normalize(focus_point - lens_pos);
+
+    // Apply simple chromatic aberration
+    if (chromatic_aberration > 0.0) {
+        // Shift ray direction slightly based on wavelength
+        // Use randx as wavelength proxy (R/G/B)
+        float wavelength_shift = (randx - 0.5) * chromatic_aberration * 0.02;
+        I = normalize(I + set(wavelength_shift, wavelength_shift * 0.5, 0.0));
+    }
+
+    // Bidirectional sampling importance
+    importance = bokeh_intensity;
+
+    // TODO: Replace thin lens with polynomial evaluation
+    // 1. Load lens polynomial coefficients
+    // 2. Evaluate polynomial mapping: (sensor_pos, aperture_pos) -> exit_pupil
+    // 3. Use polynomial-generated direction instead of thin lens
+}

@@ -95,6 +95,25 @@ def apply_lentil_to_camera(node):
     # TODO: Apply polynomial optics shader when implemented
     # For now, we're using Karma's built-in DOF which will show a visible effect
 
+    # Assign Karma lens shader (Karma CPU only - NOT XPU!)
+    # Get path to compiled lens shader
+    import os
+    karmalentil_path = node.evalParm('KARMALENTIL') if node.parm('KARMALENTIL') else os.getenv('KARMALENTIL')
+
+    if karmalentil_path:
+        # Path to VEX lens shader
+        vex_path = os.path.join(karmalentil_path, 'vex', 'karma_lentil_lens.vfl')
+
+        # Check if lens shader parameter exists
+        if node.parm('lensshader'):
+            # Assign lens shader
+            node.parm('lensshader').set(vex_path)
+            print(f"  Assigned Karma lens shader: {vex_path}")
+            print(f"  NOTE: Lens shader only works with Karma CPU, not Karma XPU!")
+        else:
+            print(f"  WARNING: Camera doesn't have 'lensshader' parameter")
+            print(f"  Lens shader assignment not supported on this camera type")
+
 
 def disable_lentil_on_camera(node):
     """
@@ -112,6 +131,10 @@ def disable_lentil_on_camera(node):
             node.parm('fStop').set(64.0)
         elif node.parm('fstop'):
             node.parm('fstop').set(64.0)
+
+    # Clear lens shader
+    if node.parm('lensshader'):
+        node.parm('lensshader').set('')
 
     print(f"  Disabled DOF on camera")
 
