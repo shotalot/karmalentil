@@ -106,25 +106,15 @@ def apply_lentil_to_camera(node):
     elif node.parm('depthoffield'):
         node.parm('depthoffield').set(1)
 
-    # Set aperture (sensor width) - handle both float and string types
+    # Set aperture (sensor width)
+    # LOP cameras use camelCase: 'horizontalAperture' not 'aperture'!
     aperture_cm = sensor_width / 10.0  # mm to cm
-    if node.parm('horizontalaperture'):
-        # LOP camera parameter
-        try:
-            print(f"  Setting horizontalaperture to {aperture_cm}")
-            node.parm('horizontalaperture').set(aperture_cm)
-        except TypeError:
-            # If it's a string parameter
-            print(f"  Setting horizontalaperture (string) to {aperture_cm}")
-            node.parm('horizontalaperture').set(str(aperture_cm))
+    if node.parm('horizontalAperture'):
+        print(f"  Setting horizontalAperture to {aperture_cm}cm")
+        node.parm('horizontalAperture').set(aperture_cm)
     elif node.parm('aperture'):
-        try:
-            print(f"  Setting aperture to {aperture_cm}")
-            node.parm('aperture').set(aperture_cm)
-        except TypeError:
-            # If it's a string parameter
-            print(f"  Setting aperture (string) to {aperture_cm}")
-            node.parm('aperture').set(str(aperture_cm))
+        print(f"  Setting aperture to {aperture_cm}cm")
+        node.parm('aperture').set(aperture_cm)
 
     print(f"  ✓ Applied DOF: focal={focal_length}mm, f/{fstop}, focus={focus_distance}mm")
     print(f"  TIP: Render or use Karma viewport to see depth of field effect")
