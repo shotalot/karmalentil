@@ -356,14 +356,23 @@ Original project: https://github.com/zpelgrims/lentil
         print("✓ Added help text and metadata")
         print()
 
-        # Install it
+        # Clean up temp network BEFORE installing from file
+        # This is important: destroying the network invalidates the in-memory definition
+        # So we destroy first, then install fresh from the file
+        print("Cleaning up temporary network...")
+        temp_lop.destroy()
+
+        # Now uninstall any existing broken definitions
+        existing_defs = hou.hda.definitionsInFile(hda_path)
+        for existing_def in existing_defs:
+            if existing_def.isInstalled():
+                hou.hda.uninstallFile(hda_path)
+                break
+
+        # Install the HDA from file (fresh, not the temp network's definition)
         hou.hda.installFile(hda_path)
         print("✓ Installed HDA in current session")
         print()
-
-        # Clean up temp network
-        # Note: Destroy the temp network, not the HDA node
-        temp_lop.destroy()
 
         print("=" * 70)
         print("HDA CREATION COMPLETE!")
@@ -379,7 +388,11 @@ Original project: https://github.com/zpelgrims/lentil
         print("  4. Drop it in and start using!")
         print()
 
-        return hda_definition
+        # Return the freshly installed definition from the file
+        installed_defs = hou.hda.definitionsInFile(hda_path)
+        if installed_defs:
+            return installed_defs[0]
+        return None
 
     except Exception as e:
         print(f"ERROR creating HDA: {e}")
