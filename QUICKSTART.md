@@ -41,6 +41,10 @@ print(hou.getenv("KARMALENTIL"))  # Should show installation path
 
 ## 3. Create Lentil Camera (30 seconds)
 
+**First Time Only**: Click the **"Lentil Camera"** shelf tool to build the HDA (~5 seconds). This creates the camera asset permanently.
+
+After that, use either method:
+
 **Method A: Drop-in HDA** (Recommended):
 
 1. Create a **LOP network** at `/stage` level (or use existing one)
@@ -59,8 +63,6 @@ print(hou.getenv("KARMALENTIL"))  # Should show installation path
    - Dome light for illumination
    - Karma render settings configured
    - Viewport set to Karma rendering
-
-**Note**: If the HDA isn't found, the shelf tool will offer to build it automatically.
 
 ## 4. View in Viewport (Immediate)
 

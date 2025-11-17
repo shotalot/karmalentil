@@ -79,7 +79,7 @@ The HDA includes:
 
 **That's it!** No Python scripts, no complex setup - just drop the HDA and start rendering.
 
-**Note**: If the HDA isn't found on first use, the shelf tool will offer to build it automatically. Just click "Yes" and it will be created.
+**First-Time Setup**: On first use, click the **"Lentil Camera" shelf tool** to build the HDA (takes ~5 seconds). After that, the HDA is permanently available in the TAB menu for all your projects.
 
 ### Method 2: Using Shelf Tools
 
