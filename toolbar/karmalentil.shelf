@@ -32,60 +32,40 @@ try:
     # Create LOP network
     lop_network = stage.createNode('lopnet', 'lentil_stage')
 
-    # Create regular camera node (lentil parameters are automatically added!)
+    # Create regular camera node (lentil parameters are automatically added via OnCreated!)
     camera = lop_network.createNode('camera', 'lentil_camera')
 
-    # Set camera path (check if parameter exists)
-    if camera.parm('primpath'):
-        camera.parm('primpath').set('/cameras/lentil_camera')
+    # Set camera path
+    camera.parm('primpath').set('/cameras/lentil_camera')
 
-    # Enable lentil by default (check if parameter exists - might not be added yet)
-    if camera.parm('enable_lentil'):
+    # Check if lentil parameters were added by OnCreated callback
+    has_lentil = camera.parm('enable_lentil') is not None
+
+    if has_lentil:
+        # Enable lentil by default
         camera.parm('enable_lentil').set(1)
+        print("✓ Lentil parameters found and enabled")
     else:
-        print("Warning: Lentil parameters not found on camera node")
-        print("This might mean the startup script hasn't run yet or failed")
-        print("Try restarting Houdini or check the console for errors")
+        print("⚠ Lentil parameters not found on camera")
+        print("  This means the OnCreated callback didn't run")
+        print("  Please RESTART HOUDINI to load the camera_OnCreated.py script")
+        print("  (This is required for the OnCreated callback to work)")
 
-    # Add example scene geometry
-    sphere1 = lop_network.createNode('sphere', 'sphere_foreground')
-    sphere1.setInput(0, camera)
-    sphere1.parm('primpath').set('/geo/sphere_fg')
-    sphere1.parm('radius').set(0.5)
-    sphere1.parm('ty').set(0)
-    sphere1.parm('tz').set(0)
+    # Simple scene setup
+    current = camera
 
-    sphere2 = lop_network.createNode('sphere', 'sphere_background')
-    sphere2.setInput(0, sphere1)
-    sphere2.parm('primpath').set('/geo/sphere_bg')
-    sphere2.parm('radius').set(0.3)
-    sphere2.parm('ty').set(0)
-    sphere2.parm('tz').set(-3)
+    # Add a simple light
+    try:
+        dome_light = lop_network.createNode('domelight', 'dome_light')
+        dome_light.setInput(0, current)
+        dome_light.parm('primpath').set('/lights/dome')
+        dome_light.parm('intensity').set(1.0)
+        current = dome_light
+    except:
+        pass  # If dome light fails, just continue
 
-    grid = lop_network.createNode('grid', 'ground')
-    grid.setInput(0, sphere2)
-    grid.parm('primpath').set('/geo/ground')
-    grid.parm('scale').set(10)
-    grid.parm('ty').set(-1)
-
-    # Add dome light
-    dome_light = lop_network.createNode('domelight', 'dome_light')
-    dome_light.setInput(0, grid)
-    dome_light.parm('primpath').set('/lights/dome')
-    dome_light.parm('intensity').set(1.0)
-
-    # Add Karma render settings
-    render_settings = lop_network.createNode('karmarenderproperties', 'karma_settings')
-    render_settings.setInput(0, dome_light)
-    render_settings.parm('camera').set('/cameras/lentil_camera')
-    render_settings.parm('pixelsamples').set(1024)
-
-    # Add Karma render node
-    karma = lop_network.createNode('karma', 'render')
-    karma.setInput(0, render_settings)
-    karma.parm('camera').set('/cameras/lentil_camera')
-    karma.parm('picture').set('$HIP/render/$HIPNAME.$F4.exr')
-    karma.setDisplayFlag(True)
+    # Set display flag
+    current.setDisplayFlag(True)
 
     # Layout
     lop_network.layoutChildren()
@@ -104,19 +84,42 @@ try:
         except:
             pass
 
+    # Build status message
+    if has_lentil:
+        status_msg = (
+            "Lentil Camera Created!\n\n"
+            "LOP Network: {}\n"
+            "Camera Node: {}\n"
+            "USD Path: /cameras/lentil_camera\n\n"
+            "✓ Lentil parameters automatically added\n"
+            "✓ Lentil enabled by default\n\n"
+            "Adjust parameters in the camera's 'Lentil Lens' tab.\n"
+            "Viewport is configured for Karma rendering.".format(
+                lop_network.path(),
+                camera.path()
+            )
+        )
+        severity = hou.severityType.Message
+    else:
+        status_msg = (
+            "Camera Created (Lentil Not Active Yet)\n\n"
+            "LOP Network: {}\n"
+            "Camera Node: {}\n\n"
+            "⚠ Lentil parameters NOT found\n\n"
+            "The OnCreated callback hasn't run yet.\n"
+            "This is normal on first install.\n\n"
+            "PLEASE RESTART HOUDINI\n\n"
+            "After restarting, create a new camera and\n"
+            "you'll see the 'Lentil Lens' tab appear automatically!".format(
+                lop_network.path(),
+                camera.path()
+            )
+        )
+        severity = hou.severityType.Warning
+
     hou.ui.displayMessage(
-        "Lentil Camera Created!\n\n"
-        "LOP Network: {}\n"
-        "Camera Node: {}\n"
-        "USD Path: /cameras/lentil_camera\n\n"
-        "✓ Lentil parameters automatically added\n"
-        "✓ Lentil enabled by default\n\n"
-        "Adjust parameters in the camera's 'Lentil Lens' tab.\n"
-        "Viewport is configured for Karma rendering.".format(
-            lop_network.path(),
-            camera.path()
-        ),
-        severity=hou.severityType.Message,
+        status_msg,
+        severity=severity,
         title="KarmaLentil"
     )
 
