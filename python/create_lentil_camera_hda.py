@@ -65,10 +65,7 @@ def create_lentil_camera_hda():
     output = subnet.createNode('output', 'output0')
     output.setInput(0, camera)
     output.setDisplayFlag(True)
-    output.setRenderFlag(True)
-
-    # Set up subnet's input/output
-    subnet.setFirstInput(None)  # No input required
+    # Note: LOPs don't have render flags, only display flags
 
     # Layout subnet contents
     subnet.layoutChildren()
