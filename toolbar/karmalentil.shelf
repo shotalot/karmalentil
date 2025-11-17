@@ -52,13 +52,28 @@ try:
         ) == 0:
             # Build the HDA
             import create_lentil_camera_hda
-            create_lentil_camera_hda.create_lentil_camera_hda()
+            result = create_lentil_camera_hda.create_lentil_camera_hda()
+
+            # Unpack result (definition, temp_lop)
+            if result and len(result) == 2:
+                hda_def, temp_lop = result
+            else:
+                hda_def, temp_lop = None, None
 
             # Try creating again
             try:
                 camera = lop_network.createNode('karmalentil::camera::1.0', 'lentil_camera')
+
+                # SUCCESS! Now we can safely destroy the temp network
+                if temp_lop:
+                    temp_lop.destroy()
+
             except hou.OperationFailed:
                 camera = None
+                # Failed to create - but don't destroy temp yet, might need it for debugging
+                if temp_lop:
+                    print("Warning: Failed to create camera instance, keeping temp network for debugging")
+                    print("  Temp network: {}".format(temp_lop.path()))
 
     if camera:
         # Add example scene geometry (optional)

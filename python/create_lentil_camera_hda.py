@@ -370,11 +370,8 @@ Original project: https://github.com/zpelgrims/lentil
         print("✓ Added help text and metadata")
         print()
 
-        # Clean up temp network BEFORE installing from file
-        # This is important: destroying the network invalidates the in-memory definition
-        # So we destroy first, then install fresh from the file
-        print("Cleaning up temporary network...")
-        temp_lop.destroy()
+        # DON'T destroy temp network yet - it will invalidate the HDA
+        # The caller should destroy it AFTER successfully creating an instance
 
         # Now uninstall any existing broken definitions
         existing_defs = hou.hda.definitionsInFile(hda_path)
@@ -433,20 +430,21 @@ Original project: https://github.com/zpelgrims/lentil
         print("  4. Drop it in and start using!")
         print()
 
-        # Return the freshly installed definition from the file
+        # Return the freshly installed definition AND temp network
+        # Caller should destroy temp_lop AFTER creating an instance
         installed_defs = hou.hda.definitionsInFile(hda_path)
         if installed_defs:
-            return installed_defs[0]
-        return None
+            return (installed_defs[0], temp_lop)
+        return (None, temp_lop)
 
     except Exception as e:
         print(f"ERROR creating HDA: {e}")
         import traceback
         traceback.print_exc()
 
-        # Clean up
+        # Clean up on error
         temp_lop.destroy()
-        return None
+        return (None, None)
 
 
 if __name__ == '__main__':
