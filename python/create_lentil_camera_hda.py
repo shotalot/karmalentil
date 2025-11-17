@@ -42,15 +42,27 @@ def create_lentil_camera_hda():
     temp_lop = stage.createNode('lopnet', 'temp_lentil_builder')
 
     # Create the base camera node inside
+    print("Creating camera LOP node...")
     camera = temp_lop.createNode('camera', 'lentil_camera_internal')
 
+    if not camera:
+        print("ERROR: Failed to create camera node!")
+        temp_lop.destroy()
+        return None
+
+    print(f"✓ Camera node created: {camera.path()}")
+
     # Set default camera parameters
-    camera.parm('resx').set(1920)
-    camera.parm('resy').set(1080)
-    camera.parm('focal').set(50.0)
-    camera.parm('aperture').set(41.4214)
-    camera.parm('focus').set(5.0)
-    camera.parm('fstop').set(2.8)
+    try:
+        camera.parm('resx').set(1920)
+        camera.parm('resy').set(1080)
+        camera.parm('focal').set(50.0)
+        camera.parm('aperture').set(41.4214)
+        camera.parm('focus').set(5.0)
+        camera.parm('fstop').set(2.8)
+    except AttributeError as e:
+        print(f"Warning: Could not set camera parameter: {e}")
+        print("Camera may not have all expected parameters")
 
     # Get parameter template group to add lentil parameters
     parm_template_group = camera.parmTemplateGroup()
