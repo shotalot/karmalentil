@@ -6,11 +6,13 @@ Complete guide for integrating lentil with real-time viewport display and bidire
 ## Overview
 
 KarmaLentil now includes full viewport integration with:
-- **Real-time lens aberrations** in Karma viewport
+- **Real-time lens aberrations** in Karma viewport (Solaris/LOPs)
 - **Interactive bidirectional filtering** with live preview
-- **HDA-based camera** for easy setup
+- **LOP-based workflow** for Karma compatibility
 - **Lens database** with multiple lens models
 - **Custom aperture textures** for unique bokeh shapes
+
+**Important**: This plugin works exclusively with **LOPs/Solaris**, as Karma requires a USD-based workflow. It does not work with OBJ-level cameras.
 
 ## Architecture
 
@@ -47,62 +49,83 @@ KarmaLentil now includes full viewport integration with:
 
 ## Quick Setup
 
-### Method 1: Using HDA (Recommended)
+### Method 1: Using Shelf Tool (Recommended)
 
-**Step 1**: Load the Lentil Camera HDA
+**Step 1**: Create Lentil Camera Setup
 
-```python
-# In Houdini Python shell
-import sys
-sys.path.append('$KARMALENTIL/python')
-import create_lentil_hda
+1. Find the **karmalentil** shelf at the top of Houdini
+2. Click **"Lentil Camera"** shelf tool
+3. A complete LOP network is created automatically with:
+   - Camera at `/cameras/lentil_camera`
+   - Example scene geometry
+   - Dome light
+   - Karma render settings
 
-# Create lentil camera
-cam = create_lentil_hda.create_lentil_camera_hda()
-```
+**Step 2**: Viewport Configuration
 
-**Step 2**: Configure Karma Viewport
-
-1. In viewport, click camera icon → Select your lentil camera
-2. Set display mode to "Karma"
-3. Enable "High Quality Lighting"
-4. Set samples to at least 32 (for smooth bokeh)
+The viewport is automatically configured:
+- Set to Solaris/LOPs context
+- Karma rendering enabled
+- Scene viewer displays the LOP network
 
 **Step 3**: Adjust Lentil Parameters
 
-In the camera parameters:
-- **Lentil Lens** tab:
-  - Enable Lentil: ✓
-  - Lens Model: Double Gauss 50mm
-  - Focal Length: 50mm
-  - F-Stop: 2.8 (lower = more bokeh)
-  - Focus Distance: 5000mm (5m)
-
-- **Bidirectional** tab:
-  - Enable Bidirectional: ✓
-  - Filter Quality: 1.0
-  - Bokeh Intensity: 1.0
+Select the camera LOP node and find the **Lentil Lens** tab:
+- **Enable Lentil**: ✓
+- **Lens Model**: Double Gauss 50mm
+- **Focal Length**: 50mm
+- **F-Stop**: 2.8 (lower = more bokeh)
+- **Focus Distance**: 5000mm (5m)
+- **Sensor Width**: 36mm
+- **Chromatic Aberration**: 1.0
+- **Bokeh Blades**: 6 (0 for circular)
+- **Enable Bidirectional**: ✓
+- **Bokeh Intensity**: 1.0
 
 **Step 4**: View in Viewport
 
 The viewport will now show:
-- Real-time lens aberrations
+- Real-time lens aberrations in Karma
 - Depth of field with bokeh
 - Chromatic aberration (if enabled)
 - Interactive updates as you change parameters
 
-### Method 2: Manual Integration
+### Method 2: Python Setup (Alternative)
+
+```python
+# In Houdini Python shell
+import sys
+sys.path.append('/path/to/karmalentil/python')
+import setup_lentil_lops
+
+# Create complete LOP network
+lop_network, camera = setup_lentil_lops.main()
+```
+
+This creates the same setup as the shelf tool.
+
+### Method 3: Manual Integration in LOPs
 
 If you prefer manual setup or need custom configuration:
 
-**Step 1**: Create Camera with VEX Shader
+**Step 1**: Create LOP Network
 
-1. Create a camera: `/obj/lentil_cam`
-2. Create SHOP network: `/shop/lentil_camera_material`
-3. Inside SHOP, create "VOP Material" or "MaterialX" network
-4. Add "Inline Code" VOP or "Custom VEX" node
-5. Load shader code from `vex/camera/lentil_camera_integrated.vfl`
-6. Assign material to camera
+1. At `/stage` level, create a LOP network node
+2. Inside the LOP network, add these nodes:
+   - Camera LOP node
+   - Geometry LOP nodes (for your scene)
+   - Light LOP nodes
+   - Karma Render Properties LOP
+   - Karma LOP (for rendering)
+
+**Step 2**: Configure Camera
+
+In the Camera LOP node, set basic parameters:
+- Resolution: 1920x1080
+- Focal Length: 50mm
+- Aperture: 41.4214mm (full-frame)
+- Focus Distance: 5.0m
+- F-Stop: 2.8
 
 **Step 2**: Setup Camera Parameters
 

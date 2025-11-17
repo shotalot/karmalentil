@@ -4,6 +4,8 @@ Polynomial optics for Houdini Karma - realistic lens aberrations and bokeh effec
 
 Port of [lentil](https://github.com/zpelgrims/lentil) from Arnold to Houdini Karma.
 
+**Works with LOPs/Solaris** - Built for Karma's USD-based architecture.
+
 ## Features
 
 - ✨ **Real-time viewport integration** with Karma renderer
@@ -63,9 +65,10 @@ After installation, find the **karmalentil** shelf in Houdini:
 
 **Quick Start**:
 1. Click **"Lentil Camera"** shelf tool
-2. Adjust parameters in camera's Lentil tabs
-3. View real-time effects in Karma viewport
-4. Render!
+2. A complete LOP network is created with camera, scene, and Karma settings
+3. Adjust parameters in camera's "Lentil Lens" tab
+4. View real-time effects in Karma viewport (Solaris)
+5. Render!
 
 **Shelf Tools**:
 - 📷 **Lentil Camera** - Create complete setup
@@ -73,12 +76,20 @@ After installation, find the **karmalentil** shelf in Houdini:
 - 📦 **Import Lens** - Add lenses from lentil repository
 - ❓ **Help** - Documentation and support
 
-### Manual Setup
+### Manual Setup (Advanced)
 
-1. Create a Karma camera in your scene
-2. In the camera parameters, navigate to the "Lentil" tab
-3. Select a lens model from the dropdown
-4. Adjust focus distance and f-stop
+You can also set up lentil manually in LOPs:
+
+1. Create a LOP network at `/stage`
+2. Add a Camera LOP node
+3. Run the Python setup script in Houdini's Python Shell:
+   ```python
+   import sys
+   sys.path.append('/path/to/karmalentil/python')
+   import setup_lentil_lops
+   lop_network, camera = setup_lentil_lops.main()
+   ```
+4. Adjust camera parameters in the "Lentil Lens" tab
 5. Render with Karma
 
 ### Bidirectional Filtering (Advanced Bokeh)
@@ -120,6 +131,11 @@ KarmaLentil uses sparse high-degree polynomials (degree 9-15) to model lens aber
 
 ## New in This Version
 
+### LOPs/Solaris Architecture
+- 🎯 **Native USD integration** - Built for Karma's Solaris workflow
+- 🎬 **LOP network creation** - Complete stage setup with one click
+- ⚡ **Karma-optimized** - Works with both Karma XPU (GPU) and CPU
+
 ### Viewport Integration
 - ✨ **Real-time preview** in Karma viewport with all lens effects
 - 🎯 **Interactive parameter adjustment** with immediate visual feedback
@@ -127,7 +143,7 @@ KarmaLentil uses sparse high-degree polynomials (degree 9-15) to model lens aber
 - 🎨 **Live bidirectional filtering** for accurate bokeh in viewport
 
 ### Complete System
-- 📦 **HDA-based camera** - One-click setup with all parameters
+- 📦 **One-click setup** - Creates complete LOP network with camera, lights, and render settings
 - 📚 **Lens database** - Automatic loading of all available lenses
 - 🎨 **Aperture textures** - Custom bokeh shapes (hearts, stars, logos)
 - 🐍 **Python automation** - Complete setup and batch processing scripts

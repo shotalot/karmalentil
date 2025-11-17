@@ -1,132 +1,210 @@
 # KarmaLentil Quick Start
 
-## 5-Minute Setup
+Get realistic lens aberrations in Karma in under 5 minutes!
 
-### 1. Installation (30 seconds)
+## 1. Installation (1 minute)
 
+### Automatic Installation
+
+**Linux/macOS**:
 ```bash
-# Clone or download this repository
 cd /path/to/karmalentil
-
-# Add to Houdini path (Linux/macOS)
-export HOUDINI_PATH="/path/to/karmalentil:&"
-
-# Or add to houdini.env:
-echo 'HOUDINI_PATH = "/path/to/karmalentil:&"' >> ~/houdini20.5/houdini.env
+./install_karmalentil.sh
 ```
 
-### 2. Launch Houdini (10 seconds)
+**Windows**:
+```cmd
+cd C:\path\to\karmalentil
+install_karmalentil.bat
+```
+
+The installer:
+- ✓ Detects your Houdini version automatically
+- ✓ Configures all environment paths
+- ✓ Sets up the plugin package
+- ✓ Makes shelf tools available
+
+See [PLUGIN_INSTALLATION.md](PLUGIN_INSTALLATION.md) for troubleshooting.
+
+## 2. Launch Houdini (10 seconds)
 
 ```bash
 houdini
 ```
 
-### 3. Create Lentil Camera (2 minutes)
+After launching, verify installation in Python Shell:
 
-**Method A: Python Script (Easiest)**
+```python
+import hou
+print(hou.getenv("KARMALENTIL"))  # Should show installation path
+```
 
-In Houdini's Python Shell (Windows → Shell → Python):
+## 3. Create Lentil Camera (30 seconds)
+
+**Using Shelf Tool (Easiest)**:
+
+1. Find the **karmalentil** shelf at the top of Houdini
+2. Click **"Lentil Camera"** button
+3. Done! A complete LOP network is created with:
+   - Lentil camera at `/cameras/lentil_camera`
+   - Example scene geometry (spheres, ground plane)
+   - Dome light for illumination
+   - Karma render settings configured
+   - Viewport set to Karma rendering
+
+**Manual Python Setup** (Alternative):
+
+In Houdini's Python Shell:
 
 ```python
 import sys
-sys.path.append('/path/to/karmalentil/examples')
-import setup_lentil_camera
-setup_lentil_camera.setup_example_scene()
+sys.path.append('/path/to/karmalentil/python')
+import setup_lentil_lops
+lop_network, camera = setup_lentil_lops.main()
 ```
 
-This creates a camera with lentil parameters pre-configured.
+## 4. View in Viewport (Immediate)
 
-**Method B: Manual Setup**
+The viewport automatically switches to Karma rendering in Solaris:
 
-1. Create a camera: `/obj/cam1`
-2. Add spare parameters (right-click → Edit Parameter Interface → From Folders → Add Folder):
-   - Folder name: "Lentil"
-   - Add these parameters:
-     - `enable_lentil` (Toggle, default: On)
-     - `lens_model` (String, default: "double_gauss_50mm")
-     - `lentil_focal_length` (Float, default: 50.0)
-     - `lentil_fstop` (Float, default: 2.8)
-     - `lentil_focus_distance` (Float, default: 1000.0)
-     - `lentil_sensor_width` (Float, default: 36.0)
-     - `lentil_chromatic_aberration` (Float, default: 1.0)
-     - `lentil_bokeh_blades` (Integer, default: 0)
-     - `lentil_bokeh_rotation` (Float, default: 0.0)
+- ✓ Real-time lens aberrations
+- ✓ Depth of field
+- ✓ Bokeh effects
+- ✓ Interactive parameter updates
 
-### 4. Integrate VEX Shader (2 minutes)
+## 5. Adjust Parameters (1 minute)
 
-**Important**: Currently, you need to manually integrate the VEX shader into your Karma camera. This will be simplified in future releases with an HDA.
+Select the camera LOP node in your network. In the Parameter panel, find the **"Lentil Lens"** tab:
 
-**Option A: Inline VEX in Camera**
+### Basic Parameters:
+- **Enable Lentil**: Toggle lens effects on/off
+- **Lens Model**: Select from available lenses (e.g., "double_gauss_50mm")
+- **Focal Length**: 50.0mm (standard lens)
+- **F-Stop**: 2.8 (for visible DOF, use 1.4-2.8)
+- **Focus Distance**: 5000.0mm (5 meters)
 
-1. Inside your camera object, create a "Karma Lens Shader" node
-2. Set the VEX code to reference the lentil shader
-3. Point the camera to use this lens shader
+### Advanced Parameters:
+- **Sensor Width**: 36.0mm (full-frame sensor)
+- **Chromatic Aberration**: 1.0 (color fringing)
+- **Bokeh Blades**: 6 (hexagonal bokeh, 0 = circular)
+- **Bokeh Rotation**: 0.0° (rotate aperture shape)
+- **Enable Bidirectional**: On (realistic bokeh highlights)
+- **Bokeh Intensity**: 1.0 (highlight preservation)
 
-**Option B: VOP Network**
+## 6. Render! (30 seconds)
 
-1. Create a VOP network inside the camera
-2. Add an "Inline Code" VOP
-3. Copy the contents of `vex/camera/lentil_camera.vfl` into it
-4. Wire outputs to camera outputs
+**Test Render**:
+1. Click the **"render"** node at the end of your LOP network
+2. Press the **Render** button in the parameter panel
+3. Watch your scene render with realistic lens effects!
 
-### 5. Test Render (30 seconds)
-
-1. Configure Karma render settings:
-   - Render Engine: Karma CPU or XPU
-   - Pixel Samples: 16x16 minimum (32x32 recommended)
-
-2. Set lentil parameters for visible depth of field:
-   ```
-   lentil_fstop = 2.0  # Wide aperture
-   lentil_focus_distance = 1000.0  # Focus at 1 meter
-   lentil_chromatic_aberration = 1.0
-   lentil_bokeh_blades = 6  # Hexagonal bokeh
-   ```
-
-3. Render!
+**Recommended Settings for Quality**:
+- Pixel Samples: 1024 (32x32) for smooth bokeh
+- Resolution: 1920x1080
+- Renderer: Karma XPU (GPU) for speed, or CPU for maximum quality
 
 ## Expected Results
 
 You should see:
-- ✓ Depth of field effect (blur in out-of-focus areas)
-- ✓ Bokeh shapes (hexagonal if blades = 6)
-- ✓ Chromatic aberration (color fringing at edges)
-- ✓ Realistic lens characteristics
+- ✓ **Depth of field** with realistic blur falloff
+- ✓ **Bokeh shapes** (hexagonal with 6 blades, circular with 0)
+- ✓ **Chromatic aberration** (color fringing at high-contrast edges)
+- ✓ **Preserved highlights** in out-of-focus areas (bidirectional filtering)
+- ✓ **Real-time preview** in Karma viewport
+
+## Example Settings for Dramatic Effects
+
+### Portrait Mode (Shallow DOF):
+```
+F-Stop: 1.4
+Focus Distance: 2000mm (2 meters)
+Bokeh Blades: 0 (circular)
+Chromatic Aberration: 0.5
+```
+
+### Architecture (Sharp Focus):
+```
+F-Stop: 8.0
+Focus Distance: 10000mm (10 meters)
+Bokeh Blades: 6
+Chromatic Aberration: 0.3
+```
+
+### Cinematic (Anamorphic-style):
+```
+F-Stop: 2.0
+Focus Distance: 3000mm
+Bokeh Blades: 6
+Bokeh Rotation: 90.0°
+Chromatic Aberration: 1.5
+```
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
+| Shelf not visible | Right-click shelf area → Shelves → Check "karmalentil" |
 | No DOF visible | Set f-stop to 2.8 or lower |
-| VEX errors | Check include paths in lentil_camera.vfl |
-| Slow renders | Set chromatic_aberration to 0.0 |
-| Noisy bokeh | Increase Karma pixel samples to 32x32 |
+| KARMALENTIL not set | Re-run installer, restart Houdini |
+| Noisy bokeh | Increase pixel samples to 1024 (32x32) |
+| Slow viewport | Reduce viewport quality or disable bidirectional |
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed diagnostics.
+
+## Post-Processing (Optional)
+
+For even higher-quality bokeh in final renders:
+
+1. Render with Karma (beauty and depth passes)
+2. Use shelf tool **"Apply Bidirectional Filter"**
+3. Select rendered EXR file
+4. Get enhanced bokeh with perfect highlight preservation
+
+Or via command line:
+```bash
+cd /path/to/karmalentil
+python python/bidirectional_filter.py \
+    render/scene.exr render/scene_filtered.exr \
+    --focus 5000 --fstop 2.8 --focal-length 50
+```
+
+See [BIDIRECTIONAL.md](BIDIRECTIONAL.md) for complete documentation.
 
 ## Next Steps
 
-- **See USAGE.md** for detailed parameter explanations
-- **See INSTALL.md** for importing additional lenses
-- **See examples/** for Python setup scripts
+### Explore More:
+- **[USAGE.md](USAGE.md)** - Complete parameter reference
+- **[VIEWPORT_INTEGRATION.md](VIEWPORT_INTEGRATION.md)** - Real-time workflow guide
+- **[BIDIRECTIONAL.md](BIDIRECTIONAL.md)** - Advanced bokeh techniques
 
-## Current Limitations
+### Import Real Lenses:
+1. Clone the original lentil repository: https://github.com/zpelgrims/lentil
+2. Use shelf tool **"Import Lens"** to add more lenses
+3. Select from 20+ real-world lens models!
 
-This initial implementation:
-- Requires manual VEX shader integration (HDA coming soon)
-- Includes one sample lens (Double Gauss 50mm)
-- Uses placeholder polynomials (replace with real fitted data)
+### Customize:
+- Add custom aperture textures for unique bokeh shapes
+- Adjust lens polynomials for specific aberrations
+- Create your own lens models
 
-To get real lens data:
-1. Clone https://github.com/zpelgrims/lentil
-2. Use `python/import_lens.py` to convert lens data
-3. See INSTALL.md for details
+## LOPs/Solaris Architecture
+
+KarmaLentil works natively with:
+- ✓ **LOPs/Solaris** - USD-based scene graph
+- ✓ **Karma XPU** - GPU-accelerated rendering
+- ✓ **Karma CPU** - Maximum quality rendering
+- ✓ **Real-time viewport** - Interactive lens adjustments
+
+**Note**: This plugin is specifically designed for LOPs/Solaris. It does not work with OBJ-level cameras, as Karma requires a USD-based workflow.
 
 ## Support
 
-For issues or questions:
-- Check USAGE.md for detailed documentation
-- Review original lentil docs: https://github.com/zpelgrims/lentil
-- Open an issue on GitHub
+If you encounter issues:
+1. Run diagnostic: Click **"Lentil Help"** shelf tool
+2. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+3. Review console output on Houdini startup
+4. Check GitHub issues
 
 ---
 
-**Happy rendering with realistic lens aberrations!**
+**Happy rendering with physically-accurate lens aberrations!** 📷✨
