@@ -32,8 +32,13 @@ try:
     # Create LOP network
     lop_network = stage.createNode('lopnet', 'lentil_stage')
 
-    # Create lentil camera HDA
-    camera = lop_network.createNode('karmalentil::camera::1.0', 'lentil_camera')
+    # Try to create lentil camera HDA
+    camera = None
+    try:
+        camera = lop_network.createNode('karmalentil::camera::1.0', 'lentil_camera')
+    except hou.OperationFailed:
+        # HDA doesn't exist yet
+        pass
 
     if not camera:
         # HDA not found, offer to build it
@@ -50,7 +55,10 @@ try:
             create_lentil_camera_hda.create_lentil_camera_hda()
 
             # Try creating again
-            camera = lop_network.createNode('karmalentil::camera::1.0', 'lentil_camera')
+            try:
+                camera = lop_network.createNode('karmalentil::camera::1.0', 'lentil_camera')
+            except hou.OperationFailed:
+                camera = None
 
     if camera:
         # Add example scene geometry (optional)
