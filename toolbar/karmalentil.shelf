@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- Lentil Camera Tool -->
+  <tool name="lentil_camera" label="Lentil Camera" icon="NETWORKS_camera">
+    <script scriptType="python"><![CDATA[
+import hou
+import sys
+import os
+
+# Add karmalentil python to path
+karmalentil_path = hou.getenv("KARMALENTIL")
+if karmalentil_path:
+    python_path = os.path.join(karmalentil_path, "python")
+    if python_path not in sys.path:
+        sys.path.insert(0, python_path)
+
+# Import and create lentil camera
+try:
+    import setup_complete_lentil
+    cam, rop = setup_complete_lentil.main()
+
+    if cam:
+        # Select and frame the camera
+        cam.setSelected(True, clear_all_selected=True)
+
+        # Set viewport to camera view
+        scene_viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
+        if scene_viewer:
+            viewport = scene_viewer.curViewport()
+            viewport.setCamera(cam)
+
+        hou.ui.displayMessage(
+            "Lentil Camera Created!\n\n"
+            "Camera: {}\n"
+            "Render: {}\n\n"
+            "Adjust parameters in the camera's Lentil tabs.\n"
+            "Viewport is now in Karma render mode.".format(cam.path(), rop.path()),
+            severity=hou.severityType.Message,
+            title="KarmaLentil"
+        )
+
+except Exception as e:
+    hou.ui.displayMessage(
+        "Error creating Lentil Camera:\n\n{}".format(str(e)),
+        severity=hou.severityType.Error,
+        title="KarmaLentil Error"
+    )
+    import traceback
+    traceback.print_exc()
+]]></script>
+  </tool>
+
+  <!-- Apply Bidirectional Filter Tool -->
+  <tool name="lentil_filter" label="Apply Bidirectional Filter" icon="ROP_comp">
+    <script scriptType="python"><![CDATA[
+import hou
+import sys
+import os
+
+# Add karmalentil python to path
+karmalentil_path = hou.getenv("KARMALENTIL")
+if karmalentil_path:
+    python_path = os.path.join(karmalentil_path, "python")
+    if python_path not in sys.path:
+        sys.path.insert(0, python_path)
+
+# Get camera parameters
+cam = None
+scene_viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
+if scene_viewer:
+    viewport = scene_viewer.curViewport()
+    cam = viewport.camera()
+
+if not cam:
+    hou.ui.displayMessage(
+        "No camera selected.\n\nPlease set a lentil camera in the viewport.",
+        severity=hou.severityType.Warning,
+        title="KarmaLentil"
+    )
+else:
+    # Get parameters
+    focus = cam.evalParm("focus_distance") if cam.parm("focus_distance") else 1000.0
+    fstop = cam.evalParm("fstop") if cam.parm("fstop") else 2.8
+    focal = cam.evalParm("focal_length") if cam.parm("focal_length") else 50.0
+
+    # Create dialog for file selection
+    input_file = hou.ui.selectFile(
+        title="Select Rendered EXR",
+        pattern="*.exr",
+        file_type=hou.fileType.Image
+    )
+
+    if input_file:
+        # Suggest output filename
+        base, ext = os.path.splitext(input_file)
+        output_file = base + "_filtered" + ext
+
+        output_file = hou.ui.selectFile(
+            title="Save Filtered EXR As",
+            pattern="*.exr",
+            default_value=output_file,
+            file_type=hou.fileType.Image
+        )
+
+        if output_file:
+            # Run filter
+            try:
+                import bidirectional_filter
+
+                success = bidirectional_filter.apply_bidirectional_filter_to_exr(
+                    input_file, output_file,
+                    focus_distance=focus,
+                    focal_length=focal,
+                    fstop=fstop,
+                    bokeh_intensity=1.0
+                )
+
+                if success:
+                    hou.ui.displayMessage(
+                        "Bidirectional filter applied successfully!\n\n"
+                        "Input: {}\n"
+                        "Output: {}\n\n"
+                        "Parameters:\n"
+                        "  Focus: {}mm\n"
+                        "  F-stop: f/{}\n"
+                        "  Focal: {}mm".format(
+                            input_file, output_file, focus, fstop, focal
+                        ),
+                        severity=hou.severityType.Message,
+                        title="KarmaLentil"
+                    )
+                else:
+                    hou.ui.displayMessage(
+                        "Filter failed. Check the console for errors.",
+                        severity=hou.severityType.Error,
+                        title="KarmaLentil"
+                    )
+
+            except Exception as e:
+                hou.ui.displayMessage(
+                    "Error applying filter:\n\n{}".format(str(e)),
+                    severity=hou.severityType.Error,
+                    title="KarmaLentil"
+                )
+                import traceback
+                traceback.print_exc()
+]]></script>
+  </tool>
+
+  <!-- Import Lens Tool -->
+  <tool name="lentil_import_lens" label="Import Lens" icon="NETWORKS_obj">
+    <script scriptType="python"><![CDATA[
+import hou
+import sys
+import os
+
+# Add karmalentil python to path
+karmalentil_path = hou.getenv("KARMALENTIL")
+if karmalentil_path:
+    python_path = os.path.join(karmalentil_path, "python")
+    if python_path not in sys.path:
+        sys.path.insert(0, python_path)
+
+# Dialog for lens import
+result = hou.ui.readMultiInput(
+    message="Import lens from lentil repository",
+    input_labels=("Lens Path (from lentil repo)", "Internal Name"),
+    initial_contents=("", ""),
+    title="Import Lens"
+)
+
+if result[0] == 0:  # OK pressed
+    lens_path = result[1][0]
+    lens_name = result[1][1]
+
+    if lens_path and lens_name:
+        try:
+            import import_lens
+
+            # Run import
+            import subprocess
+            karmalentil_root = hou.getenv("KARMALENTIL")
+
+            cmd = [
+                "python",
+                os.path.join(karmalentil_root, "python", "import_lens.py"),
+                lens_path,
+                lens_name,
+                "--karmalentil-root", karmalentil_root
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True)
+
+            if result.returncode == 0:
+                hou.ui.displayMessage(
+                    "Lens imported successfully!\n\n"
+                    "Name: {}\n"
+                    "Location: {}/lenses/{}\n\n"
+                    "The lens is now available in the lens model menu.".format(
+                        lens_name, karmalentil_root, lens_name
+                    ),
+                    severity=hou.severityType.Message,
+                    title="KarmaLentil"
+                )
+            else:
+                hou.ui.displayMessage(
+                    "Import failed:\n\n{}".format(result.stderr),
+                    severity=hou.severityType.Error,
+                    title="KarmaLentil"
+                )
+
+        except Exception as e:
+            hou.ui.displayMessage(
+                "Error importing lens:\n\n{}".format(str(e)),
+                severity=hou.severityType.Error,
+                title="KarmaLentil"
+            )
+    else:
+        hou.ui.displayMessage(
+            "Please provide both lens path and internal name.",
+            severity=hou.severityType.Warning,
+            title="KarmaLentil"
+        )
+]]></script>
+  </tool>
+
+  <!-- Help Tool -->
+  <tool name="lentil_help" label="Lentil Help" icon="BUTTONS_help">
+    <script scriptType="python"><![CDATA[
+import hou
+import webbrowser
+import os
+
+karmalentil_path = hou.getenv("KARMALENTIL")
+
+help_text = """
+KARMALENTIL - Polynomial Optics for Houdini Karma
+
+QUICK START:
+1. Click 'Lentil Camera' to create a complete setup
+2. Adjust parameters in camera's Lentil tabs
+3. Render with Karma
+4. (Optional) Apply bidirectional filter for ultimate quality
+
+DOCUMENTATION:
+- README.md - Project overview
+- VIEWPORT_INTEGRATION.md - Real-time viewport guide
+- USAGE.md - Complete parameter reference
+- BIDIRECTIONAL.md - Bidirectional filtering details
+
+FEATURES:
+✓ Real-time viewport preview
+✓ Polynomial lens aberrations
+✓ Chromatic aberration
+✓ Bidirectional filtering
+✓ Custom bokeh shapes
+✓ Lens database system
+✓ GPU acceleration (Karma XPU)
+
+SUPPORT:
+- Documentation: $KARMALENTIL/
+- Original lentil: https://github.com/zpelgrims/lentil
+"""
+
+hou.ui.displayMessage(
+    help_text,
+    severity=hou.severityType.Message,
+    title="KarmaLentil Help"
+)
+
+# Ask if user wants to open documentation
+if hou.ui.displayMessage(
+    "Open documentation folder?",
+    buttons=("Yes", "No"),
+    severity=hou.severityType.Message,
+    title="KarmaLentil"
+) == 0:
+    if karmalentil_path:
+        # Open file browser to docs
+        if os.name == 'nt':  # Windows
+            os.startfile(karmalentil_path)
+        elif os.name == 'posix':  # Mac/Linux
+            import subprocess
+            subprocess.run(['xdg-open', karmalentil_path])
+]]></script>
+  </tool>
+</shelfDocument>

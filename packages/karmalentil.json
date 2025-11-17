@@ -1,0 +1,25 @@
+{
+    "name": "karmalentil",
+    "version": "1.0.0",
+    "description": "Polynomial optics for Houdini Karma - realistic lens aberrations and bokeh",
+    "author": "KarmaLentil Contributors (based on lentil by Zeno Pelgrims)",
+    "enable": true,
+
+    "env": [
+        {
+            "KARMALENTIL": "$KARMALENTIL_PATH"
+        },
+        {
+            "HOUDINI_PATH": "$KARMALENTIL_PATH;&"
+        },
+        {
+            "PYTHONPATH": "$KARMALENTIL_PATH/python:&"
+        }
+    ],
+
+    "path": "$KARMALENTIL_PATH/scripts",
+
+    "load_package_once": true,
+
+    "houdini_version_lock": false
+}

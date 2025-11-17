@@ -21,28 +21,59 @@ Port of [lentil](https://github.com/zpelgrims/lentil) from Arnold to Houdini Kar
 
 ## Installation
 
-### Quick Start
+### Quick Install (Automatic)
 
-1. Set `HOUDINI_PATH` to include this repository:
-   ```bash
-   export HOUDINI_PATH="/path/to/karmalentil:&"
-   ```
+**Linux/macOS**:
+```bash
+cd /path/to/karmalentil
+./install_karmalentil.sh
+```
 
-2. Launch Houdini 20.5+
+**Windows**:
+```cmd
+cd C:\path\to\karmalentil
+install_karmalentil.bat
+```
 
-3. Run the complete setup script in Python Shell:
-   ```python
-   import sys
-   sys.path.append('$KARMALENTIL/python')
-   import setup_complete_lentil
-   setup_complete_lentil.main()
-   ```
+The installer automatically:
+- Detects your Houdini version
+- Configures environment paths
+- Sets up the plugin
+- Ready to use - just launch Houdini!
 
-This creates a complete scene with lentil camera, Karma ROP, example geometry, and configures your viewport for real-time preview!
+### Manual Installation
+
+Add to `~/houdini20.5/packages/karmalentil.json`:
+```json
+{
+    "env": [
+        {"KARMALENTIL_PATH": "/path/to/karmalentil"},
+        {"HOUDINI_PATH": "$KARMALENTIL_PATH;&"}
+    ]
+}
+```
+
+See **[PLUGIN_INSTALLATION.md](PLUGIN_INSTALLATION.md)** for detailed installation options.
 
 ## Usage
 
-### Basic Rendering
+### Using the Plugin
+
+After installation, find the **karmalentil** shelf in Houdini:
+
+**Quick Start**:
+1. Click **"Lentil Camera"** shelf tool
+2. Adjust parameters in camera's Lentil tabs
+3. View real-time effects in Karma viewport
+4. Render!
+
+**Shelf Tools**:
+- 📷 **Lentil Camera** - Create complete setup
+- 🎨 **Apply Bidirectional Filter** - Post-process renders
+- 📦 **Import Lens** - Add lenses from lentil repository
+- ❓ **Help** - Documentation and support
+
+### Manual Setup
 
 1. Create a Karma camera in your scene
 2. In the camera parameters, navigate to the "Lentil" tab
@@ -79,11 +110,12 @@ KarmaLentil uses sparse high-degree polynomials (degree 9-15) to model lens aber
 
 ## Documentation
 
-- **[VIEWPORT_INTEGRATION.md](VIEWPORT_INTEGRATION.md)** - 🆕 Real-time viewport setup and usage
-- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup guide
-- **[INSTALL.md](INSTALL.md)** - Detailed installation instructions
+- **[PLUGIN_INSTALLATION.md](PLUGIN_INSTALLATION.md)** - 🆕 Easy plugin installation guide
+- **[VIEWPORT_INTEGRATION.md](VIEWPORT_INTEGRATION.md)** - Real-time viewport setup and usage
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute tutorial
 - **[USAGE.md](USAGE.md)** - Complete parameter reference
 - **[BIDIRECTIONAL.md](BIDIRECTIONAL.md)** - Bidirectional filtering guide
+- **[INSTALL.md](INSTALL.md)** - Advanced installation options
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
 
 ## New in This Version
