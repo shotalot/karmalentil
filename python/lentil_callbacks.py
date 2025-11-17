@@ -71,26 +71,30 @@ def apply_lentil_to_camera(node):
     # Set the camera's native DOF parameters
     # These control Karma's depth of field rendering
 
-    # Focal length (convert mm to cm for Houdini)
-    # LOP cameras use 'focallength' not 'focal'
-    if node.parm('focallength'):
-        print(f"  Setting focallength to {focal_length}")
-        node.parm('focallength').set(focal_length)  # in mm
+    # Focal length
+    # LOP cameras use camelCase: 'focalLength' not 'focallength'!
+    if node.parm('focalLength'):
+        print(f"  Setting focalLength to {focal_length}mm")
+        node.parm('focalLength').set(focal_length)  # in mm
     elif node.parm('focal'):
         focal_cm = focal_length / 10.0  # mm to cm
-        print(f"  Setting focal to {focal_cm}")
+        print(f"  Setting focal to {focal_cm}cm")
         node.parm('focal').set(focal_cm)
 
     # F-stop
-    if node.parm('fstop'):
+    # LOP cameras use camelCase: 'fStop' not 'fstop'!
+    if node.parm('fStop'):
+        print(f"  Setting fStop to {fstop}")
+        node.parm('fStop').set(fstop)
+    elif node.parm('fstop'):
         print(f"  Setting fstop to {fstop}")
         node.parm('fstop').set(fstop)
 
     # Focus distance
-    # LOP cameras use 'focusdistance' not 'focus'
-    if node.parm('focusdistance'):
-        print(f"  Setting focusdistance to {focus_distance_m}m")
-        node.parm('focusdistance').set(focus_distance_m)
+    # LOP cameras use camelCase: 'focusDistance' not 'focusdistance'!
+    if node.parm('focusDistance'):
+        print(f"  Setting focusDistance to {focus_distance_m}m")
+        node.parm('focusDistance').set(focus_distance_m)
     elif node.parm('focus'):
         print(f"  Setting focus to {focus_distance_m}m")
         node.parm('focus').set(focus_distance_m)
@@ -134,13 +138,16 @@ def disable_lentil_on_camera(node):
     Disable lentil on the camera - restore default DOF off
     """
     # Disable depth of field (or set fstop very high to effectively disable)
+    # LOP cameras use camelCase parameter names
     if node.parm('dof'):
         node.parm('dof').set(0)
     elif node.parm('depthoffield'):
         node.parm('depthoffield').set(0)
     else:
         # If no DOF toggle exists, set fstop to very high value
-        if node.parm('fstop'):
+        if node.parm('fStop'):
+            node.parm('fStop').set(64.0)
+        elif node.parm('fstop'):
             node.parm('fstop').set(64.0)
 
     print(f"  Disabled DOF on camera")
