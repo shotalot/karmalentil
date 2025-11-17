@@ -42,20 +42,6 @@ def apply_lentil_to_camera(node):
     focus_distance = node.evalParm('lentil_focus_distance')  # mm
     sensor_width = node.evalParm('lentil_sensor_width')  # mm
 
-    # DEBUG: Print what we're reading
-    print(f"  Reading lentil parameters:")
-    print(f"    lentil_focal_length = {focal_length}")
-    print(f"    lentil_fstop = {fstop}")
-    print(f"    lentil_focus_distance = {focus_distance}")
-    print(f"    lentil_sensor_width = {sensor_width}")
-
-    # DEBUG: List all camera parameters to find the right names
-    print(f"  Available camera parameters:")
-    all_parms = [p.name() for p in node.parms()]
-    camera_parms = [p for p in all_parms if any(keyword in p.lower() for keyword in ['focal', 'focus', 'fstop', 'aperture', 'dof'])]
-    for p in camera_parms:
-        print(f"    - {p}")
-
     # Validate parameters - don't apply if they're invalid
     if focal_length <= 0:
         print(f"  ERROR: Invalid focal length ({focal_length}), skipping application")
@@ -74,29 +60,23 @@ def apply_lentil_to_camera(node):
     # Focal length
     # LOP cameras use camelCase: 'focalLength' not 'focallength'!
     if node.parm('focalLength'):
-        print(f"  Setting focalLength to {focal_length}mm")
         node.parm('focalLength').set(focal_length)  # in mm
     elif node.parm('focal'):
         focal_cm = focal_length / 10.0  # mm to cm
-        print(f"  Setting focal to {focal_cm}cm")
         node.parm('focal').set(focal_cm)
 
     # F-stop
     # LOP cameras use camelCase: 'fStop' not 'fstop'!
     if node.parm('fStop'):
-        print(f"  Setting fStop to {fstop}")
         node.parm('fStop').set(fstop)
     elif node.parm('fstop'):
-        print(f"  Setting fstop to {fstop}")
         node.parm('fstop').set(fstop)
 
     # Focus distance
     # LOP cameras use camelCase: 'focusDistance' not 'focusdistance'!
     if node.parm('focusDistance'):
-        print(f"  Setting focusDistance to {focus_distance_m}m")
         node.parm('focusDistance').set(focus_distance_m)
     elif node.parm('focus'):
-        print(f"  Setting focus to {focus_distance_m}m")
         node.parm('focus').set(focus_distance_m)
 
     # Enable depth of field
@@ -111,17 +91,6 @@ def apply_lentil_to_camera(node):
     # The sensor_width parameter is used for polynomial calculations,
     # but we shouldn't override the camera's existing sensor size
     # as it will change the framing/zoom of the image.
-    #
-    # aperture_cm = sensor_width / 10.0  # mm to cm
-    # if node.parm('horizontalAperture'):
-    #     print(f"  Setting horizontalAperture to {aperture_cm}cm")
-    #     node.parm('horizontalAperture').set(aperture_cm)
-    #
-    # For now, we'll leave the camera's sensor size alone
-    print(f"  (Keeping camera's existing sensor size to preserve framing)")
-
-    print(f"  ✓ Applied DOF: focal={focal_length}mm, f/{fstop}, focus={focus_distance}mm")
-    print(f"  TIP: Render or use Karma viewport to see depth of field effect")
 
     # TODO: Apply polynomial optics shader when implemented
     # For now, we're using Karma's built-in DOF which will show a visible effect
