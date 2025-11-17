@@ -268,122 +268,12 @@ def create_lentil_camera_hda():
         print(f"✓ Saved to: {hda_path}")
         print()
 
-        # DIAGNOSTIC: Check what was actually created
-        print("Diagnostics:")
-        print(f"  Created node: {hda_node}")
-        print(f"  Type: {hda_node.type()}")
-        print(f"  Type name: {hda_node.type().name()}")
-        print(f"  Category: {hda_node.type().category().name()}")
+        # TESTING: Skip all metadata to see if that's the issue
+        # Just use the HDA as-is from createDigitalAsset()
+        print("Skipping metadata modifications for debugging...")
         print()
 
-        # Get the HDA definition
-        hda_definition = hda_node.type().definition()
-        print(f"HDA Definition:")
-        print(f"  Node type name: {hda_definition.nodeTypeName()}")
-        print(f"  Node type category: {hda_definition.nodeTypeCategory().name()}")
-        print()
-
-        # Set HDA metadata
-        hda_definition.setIcon('NETWORKS_camera')
-        hda_definition.setComment('KarmaLentil camera with polynomial optics for realistic lens aberrations')
-
-        # Add help text
-        help_text = """= KarmaLentil Camera =
-
-A camera LOP with built-in polynomial optics for realistic lens aberrations.
-
-== Features ==
-
-* Physically-based lens aberration modeling
-* Chromatic aberration with RGB wavelength sampling
-* Customizable aperture shapes (circular and polygonal)
-* Custom aperture textures for unique bokeh
-* Bidirectional filtering for realistic bokeh highlights
-* Real-time viewport integration with Karma
-
-== Quick Start ==
-
-1. Drop this node into a LOP network
-2. Adjust basic camera parameters (position, focal length, f-stop)
-3. Configure lentil parameters in the "Lentil Lens" tab
-4. Render with Karma!
-
-== Parameters ==
-
-=== Lentil Lens ===
-
-Enable Lentil:
-    Toggle lentil polynomial optics on/off
-
-Lens Model:
-    Select from available lens models in database
-
-Focal Length:
-    Lens focal length in millimeters (e.g., 50mm)
-
-F-Stop:
-    Aperture f-stop. Lower values = shallower depth of field
-    Typical range: f/1.4 to f/16
-
-Focus Distance:
-    Distance to focus plane in millimeters
-
-Sensor Width:
-    Camera sensor width in mm (36mm = full-frame)
-
-Chromatic Aberration:
-    Color fringing intensity (0=off, 1=normal, >1=exaggerated)
-
-Bokeh Blades:
-    Number of aperture blades. 0=circular, 6=hexagonal
-
-Bokeh Rotation:
-    Rotate the aperture shape in degrees
-
-Aperture Texture:
-    Optional image file for custom bokeh shapes
-
-Enable Bidirectional:
-    Enable bidirectional filtering for preserved highlights in bokeh
-
-Bokeh Intensity:
-    Intensity multiplier for bokeh highlights (1.0 = normal)
-
-== Rendering ==
-
-For best quality:
-* Use Karma XPU (GPU) or CPU renderer
-* Set pixel samples to at least 1024 (32x32) for smooth bokeh
-* Enable "High Quality Lighting" in viewport for preview
-
-== Support ==
-
-Documentation: $KARMALENTIL/README.md
-Original project: https://github.com/zpelgrims/lentil
-"""
-
-        hda_definition.addSection('Help', help_text)
-
-        # Save the definition with metadata changes
-        hda_definition.save(hda_path)
-
-        print("✓ Added help text and metadata")
-        print()
-
-        # CRITICAL: After modifying and saving the definition, we need to reload it
-        # The in-memory definition may not match the file on disk
-        print("Reloading HDA from disk...")
-
-        # Uninstall the current in-memory version
-        if hda_definition.isInstalled():
-            hda_definition.uninstall()
-
-        # Reinstall from the file we just saved
-        hou.hda.installFile(hda_path)
-
-        print("✓ HDA reloaded from disk")
-        print()
-
+        # DON'T modify, save, or reload - just use what createDigitalAsset() created
         # DON'T destroy temp network yet - it will invalidate the HDA
         # The caller should destroy it AFTER successfully creating an instance
 
@@ -416,6 +306,21 @@ Original project: https://github.com/zpelgrims/lentil
                 print(f"  Found: {karmalentil_types}")
             else:
                 print(f"  No 'karmalentil' node types found in LOP category")
+        print()
+
+        # CRITICAL TEST: Try creating an instance HERE in the builder
+        print("Testing instance creation inside builder...")
+        try:
+            test_lop = stage.createNode('lopnet', 'test_instance')
+            test_camera = test_lop.createNode('karmalentil::camera::1.0', 'test')
+            print(f"  ✓ SUCCESS: Created test instance: {test_camera.path()}")
+            print(f"  ✓ Test instance type: {test_camera.type().name()}")
+            # Clean up test
+            test_lop.destroy()
+        except Exception as e:
+            print(f"  ✗ FAILED to create instance: {e}")
+            import traceback
+            traceback.print_exc()
         print()
 
         print("=" * 70)
