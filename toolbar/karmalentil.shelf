@@ -51,8 +51,53 @@ try:
         print("  Please RESTART HOUDINI to load the camera_OnCreated.py script")
         print("  (This is required for the OnCreated callback to work)")
 
-    # Simple scene setup
+    # Simple scene setup with geometry at different depths
+    # This will make the DOF effect visible
     current = camera
+
+    # Add some test spheres at different distances to show DOF
+    try:
+        # Configure camera for better DOF visibility
+        camera.parm('tz').set(10)  # Move camera back
+        camera.parm('resx').set(1920)
+        camera.parm('resy').set(1080)
+
+        # Foreground sphere (close - will be blurry)
+        sphere_near = lop_network.createNode('sphere', 'sphere_near')
+        sphere_near.setInput(0, current)
+        sphere_near.parm('primpath').set('/geo/sphere_near')
+        sphere_near.parm('radius').set(0.5)
+        sphere_near.parm('tx').set(-2)
+        sphere_near.parm('tz').set(2)
+        current = sphere_near
+
+        # Middle sphere (in focus - based on default 5000mm = 5m focus distance)
+        sphere_mid = lop_network.createNode('sphere', 'sphere_mid')
+        sphere_mid.setInput(0, current)
+        sphere_mid.parm('primpath').set('/geo/sphere_mid')
+        sphere_mid.parm('radius').set(0.8)
+        sphere_mid.parm('tx').set(0)
+        sphere_mid.parm('tz').set(0)
+        current = sphere_mid
+
+        # Background sphere (far - will be blurry)
+        sphere_far = lop_network.createNode('sphere', 'sphere_far')
+        sphere_far.setInput(0, current)
+        sphere_far.parm('primpath').set('/geo/sphere_far')
+        sphere_far.parm('radius').set(0.6)
+        sphere_far.parm('tx').set(2)
+        sphere_far.parm('tz').set(-3)
+        current = sphere_far
+
+        # Ground plane for reference
+        grid = lop_network.createNode('grid', 'ground')
+        grid.setInput(0, current)
+        grid.parm('primpath').set('/geo/ground')
+        grid.parm('scale').set(20)
+        grid.parm('ty').set(-1)
+        current = grid
+    except:
+        pass  # If geometry fails, continue
 
     # Add a simple light
     try:
@@ -92,9 +137,16 @@ try:
             "Camera Node: {}\n"
             "USD Path: /cameras/lentil_camera\n\n"
             "✓ Lentil parameters automatically added\n"
-            "✓ Lentil enabled by default\n\n"
-            "Adjust parameters in the camera's 'Lentil Lens' tab.\n"
-            "Viewport is configured for Karma rendering.".format(
+            "✓ Lentil enabled by default\n"
+            "✓ Depth of field active\n\n"
+            "HOW TO SEE IT WORKING:\n"
+            "1. Select the camera node\n"
+            "2. Look at the 'Lentil Lens' tab\n"
+            "3. Try changing 'F-Stop' (lower = more blur)\n"
+            "4. Try changing 'Focus Distance'\n"
+            "5. Render in Karma viewport to see DOF!\n\n"
+            "Test scene has 3 spheres at different depths.\n"
+            "Middle sphere should be in focus.".format(
                 lop_network.path(),
                 camera.path()
             )

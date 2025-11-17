@@ -28,15 +28,19 @@ def add_lentil_spare_parameters(node):
     # Create Lentil Lens folder
     lentil_folder = hou.FolderParmTemplate('lentil_folder', 'Lentil Lens', folder_type=hou.folderType.Tabs)
 
-    # Enable toggle
-    lentil_folder.addParmTemplate(
-        hou.ToggleParmTemplate(
-            'enable_lentil',
-            'Enable Lentil',
-            default_value=False,
-            help='Enable lentil polynomial optics for realistic lens aberrations'
-        )
+    # Enable toggle (with callback)
+    enable_parm = hou.ToggleParmTemplate(
+        'enable_lentil',
+        'Enable Lentil',
+        default_value=False,
+        help='Enable lentil polynomial optics for realistic lens aberrations'
     )
+    # Add callback that runs when parameter changes
+    enable_parm.setTags({
+        'script_callback': 'import lentil_callbacks; lentil_callbacks.on_enable_changed(kwargs)',
+        'script_callback_language': 'python'
+    })
+    lentil_folder.addParmTemplate(enable_parm)
 
     # Lens model menu
     lentil_folder.addParmTemplate(
@@ -50,43 +54,52 @@ def add_lentil_spare_parameters(node):
         )
     )
 
-    # Focal length
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'lentil_focal_length',
-            'Focal Length (mm)',
-            1,
-            default_value=(50.0,),
-            min=1.0,
-            max=500.0,
-            help='Lens focal length in millimeters'
-        )
+    # Focal length (with callback)
+    focal_parm = hou.FloatParmTemplate(
+        'lentil_focal_length',
+        'Focal Length (mm)',
+        1,
+        default_value=(50.0,),
+        min=1.0,
+        max=500.0,
+        help='Lens focal length in millimeters'
     )
+    focal_parm.setTags({
+        'script_callback': 'import lentil_callbacks; lentil_callbacks.update_lens_parameters(kwargs)',
+        'script_callback_language': 'python'
+    })
+    lentil_folder.addParmTemplate(focal_parm)
 
-    # F-stop
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'lentil_fstop',
-            'F-Stop',
-            1,
-            default_value=(2.8,),
-            min=0.5,
-            max=64.0,
-            help='Aperture f-stop (lower = more DOF)'
-        )
+    # F-stop (with callback)
+    fstop_parm = hou.FloatParmTemplate(
+        'lentil_fstop',
+        'F-Stop',
+        1,
+        default_value=(2.8,),
+        min=0.5,
+        max=64.0,
+        help='Aperture f-stop (lower = more DOF)'
     )
+    fstop_parm.setTags({
+        'script_callback': 'import lentil_callbacks; lentil_callbacks.update_lens_parameters(kwargs)',
+        'script_callback_language': 'python'
+    })
+    lentil_folder.addParmTemplate(fstop_parm)
 
-    # Focus distance
-    lentil_folder.addParmTemplate(
-        hou.FloatParmTemplate(
-            'lentil_focus_distance',
-            'Focus Distance (mm)',
-            1,
-            default_value=(5000.0,),
-            min=1.0,
-            help='Focus distance in millimeters'
-        )
+    # Focus distance (with callback)
+    focus_parm = hou.FloatParmTemplate(
+        'lentil_focus_distance',
+        'Focus Distance (mm)',
+        1,
+        default_value=(5000.0,),
+        min=1.0,
+        help='Focus distance in millimeters'
     )
+    focus_parm.setTags({
+        'script_callback': 'import lentil_callbacks; lentil_callbacks.update_lens_parameters(kwargs)',
+        'script_callback_language': 'python'
+    })
+    lentil_folder.addParmTemplate(focus_parm)
 
     # Sensor width
     lentil_folder.addParmTemplate(
