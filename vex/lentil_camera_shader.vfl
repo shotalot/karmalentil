@@ -2,18 +2,68 @@
 // Polynomial optics for realistic lens aberrations
 // Based on lentil by Zeno Pelgrims
 
-#pragma label enable_lentil "Enable Lentil"
-#pragma label lens_model "Lens Model"
-#pragma label lentil_focal_length "Focal Length (mm)"
-#pragma label lentil_fstop "F-Stop"
-#pragma label lentil_focus_distance "Focus Distance (mm)"
-#pragma label lentil_sensor_width "Sensor Width (mm)"
-#pragma label chromatic_aberration "Chromatic Aberration"
-#pragma label bokeh_blades "Bokeh Blades"
-#pragma label bokeh_rotation "Bokeh Rotation"
-#pragma label aperture_texture "Aperture Texture"
-#pragma label enable_bidirectional "Enable Bidirectional"
-#pragma label bokeh_intensity "Bokeh Intensity"
+// Evaluate a 2D polynomial at position (x, y)
+// coeffs is array of polynomial coefficients
+// degree is the polynomial degree
+function vector2 eval_polynomial_2d(float x; float y; float coeffs_x[]; float coeffs_y[]; int degree)
+{
+    vector2 result = {0.0, 0.0};
+    int idx = 0;
+
+    // Evaluate polynomial terms
+    // For degree d, we have terms: x^i * y^j where i+j <= d
+    for (int sum = 0; sum <= degree; sum++) {
+        for (int i = 0; i <= sum; i++) {
+            int j = sum - i;
+
+            if (idx >= len(coeffs_x)) break;
+
+            float term = pow(x, i) * pow(y, j);
+            result.x += coeffs_x[idx] * term;
+            result.y += coeffs_y[idx] * term;
+
+            idx++;
+        }
+    }
+
+    return result;
+}
+
+// Sample a point on circular aperture
+function vector2 sample_circular_aperture(float u; float v; float radius)
+{
+    // Uniform disk sampling
+    float r = sqrt(u) * radius;
+    float theta = v * 2.0 * M_PI;
+    return set(r * cos(theta), r * sin(theta));
+}
+
+// Sample a point on polygonal aperture (n-sided)
+function vector2 sample_polygonal_aperture(float u; float v; int blades; float rotation; float radius)
+{
+    if (blades < 3) {
+        return sample_circular_aperture(u, v, radius);
+    }
+
+    // Convert rotation from degrees to radians
+    float rot_rad = rotation * M_PI / 180.0;
+
+    // Sample polygon using rejection sampling from circle
+    // For now, use a simple approach
+    vector2 p = sample_circular_aperture(u, v, radius);
+
+    // Rotate
+    float cos_r = cos(rot_rad);
+    float sin_r = sin(rot_rad);
+    vector2 rotated;
+    rotated.x = p.x * cos_r - p.y * sin_r;
+    rotated.y = p.x * sin_r + p.y * cos_r;
+
+    // Clip to polygon
+    // Simplified: just scale by polygon inscribed circle factor
+    float scale = cos(M_PI / float(blades));
+    return rotated * scale;
+}
 
 // Camera shader for Karma
 cvex
@@ -27,6 +77,10 @@ lentil_camera(
     vector i_direction = {0, 0, -1};
     vector i_origin = {0, 0, 0};
     float i_lensradius = 0;
+    float i_sx = 0;  // Screen space X
+    float i_sy = 0;  // Screen space Y
+    float i_u = 0;   // Random sample U
+    float i_v = 0;   // Random sample V
 
     // Lentil parameters
     int enable_lentil = 1;
@@ -53,46 +107,71 @@ lentil_camera(
         return;
     }
 
-    // TODO: Implement polynomial optics
-    // For now, this is a placeholder that demonstrates the structure
-
-    // Calculate sensor position (normalized coordinates)
-    float sensor_x = 0.0;
-    float sensor_y = 0.0;
+    // Calculate aperture radius from f-stop
+    // aperture_radius = focal_length / (2 * f_stop)
+    float aperture_radius = lentil_focal_length / (2.0 * lentil_fstop);
+    aperture_radius /= 1000.0;  // Convert mm to meters
 
     // Sample aperture position
-    float aperture_u = 0.0;
-    float aperture_v = 0.0;
-
-    // Apply aperture shape (polygonal bokeh)
+    vector2 aperture_pos;
     if (bokeh_blades > 0) {
-        // Sample polygonal aperture
-        float angle = bokeh_rotation * M_PI / 180.0;
-        // TODO: Implement polygonal sampling
-    } else if (aperture_texture != "") {
-        // Sample custom aperture texture
-        // TODO: Implement texture sampling
+        aperture_pos = sample_polygonal_aperture(i_u, i_v, bokeh_blades, bokeh_rotation, aperture_radius);
+    } else {
+        aperture_pos = sample_circular_aperture(i_u, i_v, aperture_radius);
     }
 
-    // Calculate aperture radius based on f-stop
-    float aperture_radius = lentil_focal_length / (2.0 * lentil_fstop);
+    // Calculate sensor position from screen space
+    // Normalize to sensor dimensions
+    float sensor_half_width = lentil_sensor_width / 2000.0;  // mm to meters, half width
+    float aspect = 16.0 / 9.0;  // TODO: Get actual aspect ratio
+    float sensor_half_height = sensor_half_width / aspect;
 
-    // Apply polynomial optics transformation
-    // TODO: Load lens data from database and apply polynomial evaluation
+    vector2 sensor_pos = set(
+        i_sx * sensor_half_width,
+        i_sy * sensor_half_height
+    );
 
-    // For now, pass through with simple DOF
-    o_direction = i_direction;
-    o_origin = i_origin;
-    o_importance = 1.0;
+    // For now, implement a simple thin lens model as proof of concept
+    // This will be replaced with polynomial evaluation when we load lens data
 
-    // Apply bidirectional filtering weight
-    if (enable_bidirectional) {
-        // Adjust importance based on bokeh intensity
-        o_importance *= bokeh_intensity;
-    }
+    // Thin lens approximation:
+    // focal_distance in meters
+    float focal_m = lentil_focal_length / 1000.0;
+    float focus_m = lentil_focus_distance / 1000.0;
 
-    // Apply chromatic aberration
+    // Ray from sensor through aperture
+    vector ray_origin = set(sensor_pos.x, sensor_pos.y, 0.0);
+    vector lens_point = set(aperture_pos.x, aperture_pos.y, focal_m);
+
+    // Calculate where ray hits focus plane
+    // Using thin lens formula: 1/f = 1/o + 1/i
+    float t = focus_m / focal_m;
+    vector focus_point = ray_origin + (lens_point - ray_origin) * t;
+
+    // Ray from aperture to focus point
+    o_origin = lens_point;
+    o_direction = normalize(focus_point - lens_point);
+
+    // Apply chromatic aberration by slightly shifting based on wavelength
     if (chromatic_aberration > 0.0) {
-        // TODO: Wavelength-dependent ray modification
+        // Simple wavelength-dependent focal length shift
+        // Red focuses further, blue focuses closer
+        float wavelength_shift = (i_u - 0.5) * chromatic_aberration * 0.01;
+        o_direction.x += wavelength_shift;
+        o_direction.y += wavelength_shift * 0.5;
+        o_direction = normalize(o_direction);
     }
+
+    // Bidirectional importance weighting
+    if (enable_bidirectional) {
+        // Weight by solid angle / aperture area ratio
+        // Brighter highlights in bokeh
+        o_importance = bokeh_intensity;
+    }
+
+    // TODO: Replace thin lens with polynomial evaluation:
+    // 1. Load polynomial coefficients from lens database
+    // 2. Evaluate polynomials for (sensor_pos, aperture_pos)
+    // 3. Get exit pupil direction from polynomial
+    // 4. Transform ray accordingly
 }
