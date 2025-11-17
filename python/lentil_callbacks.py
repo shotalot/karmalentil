@@ -42,6 +42,21 @@ def apply_lentil_to_camera(node):
     focus_distance = node.evalParm('lentil_focus_distance')  # mm
     sensor_width = node.evalParm('lentil_sensor_width')  # mm
 
+    # DEBUG: Print what we're reading
+    print(f"  Reading lentil parameters:")
+    print(f"    lentil_focal_length = {focal_length}")
+    print(f"    lentil_fstop = {fstop}")
+    print(f"    lentil_focus_distance = {focus_distance}")
+    print(f"    lentil_sensor_width = {sensor_width}")
+
+    # Validate parameters - don't apply if they're invalid
+    if focal_length <= 0:
+        print(f"  ERROR: Invalid focal length ({focal_length}), skipping application")
+        return
+    if fstop <= 0:
+        print(f"  ERROR: Invalid f-stop ({fstop}), skipping application")
+        return
+
     # Convert focus distance from mm to Houdini units (cm to meters)
     # Houdini typically uses meters, lens database uses mm
     focus_distance_m = focus_distance / 1000.0  # mm to meters
@@ -52,19 +67,25 @@ def apply_lentil_to_camera(node):
     # Focal length (convert mm to cm for Houdini)
     # LOP cameras use 'focallength' not 'focal'
     if node.parm('focallength'):
+        print(f"  Setting focallength to {focal_length}")
         node.parm('focallength').set(focal_length)  # in mm
     elif node.parm('focal'):
-        node.parm('focal').set(focal_length / 10.0)  # mm to cm
+        focal_cm = focal_length / 10.0  # mm to cm
+        print(f"  Setting focal to {focal_cm}")
+        node.parm('focal').set(focal_cm)
 
     # F-stop
     if node.parm('fstop'):
+        print(f"  Setting fstop to {fstop}")
         node.parm('fstop').set(fstop)
 
     # Focus distance
     # LOP cameras use 'focusdistance' not 'focus'
     if node.parm('focusdistance'):
+        print(f"  Setting focusdistance to {focus_distance_m}m")
         node.parm('focusdistance').set(focus_distance_m)
     elif node.parm('focus'):
+        print(f"  Setting focus to {focus_distance_m}m")
         node.parm('focus').set(focus_distance_m)
 
     # Enable depth of field
@@ -79,18 +100,22 @@ def apply_lentil_to_camera(node):
     if node.parm('horizontalaperture'):
         # LOP camera parameter
         try:
+            print(f"  Setting horizontalaperture to {aperture_cm}")
             node.parm('horizontalaperture').set(aperture_cm)
         except TypeError:
             # If it's a string parameter
+            print(f"  Setting horizontalaperture (string) to {aperture_cm}")
             node.parm('horizontalaperture').set(str(aperture_cm))
     elif node.parm('aperture'):
         try:
+            print(f"  Setting aperture to {aperture_cm}")
             node.parm('aperture').set(aperture_cm)
         except TypeError:
             # If it's a string parameter
+            print(f"  Setting aperture (string) to {aperture_cm}")
             node.parm('aperture').set(str(aperture_cm))
 
-    print(f"  Applied DOF: focal={focal_length}mm, f/{fstop}, focus={focus_distance}mm")
+    print(f"  ✓ Applied DOF: focal={focal_length}mm, f/{fstop}, focus={focus_distance}mm")
     print(f"  TIP: Render or use Karma viewport to see depth of field effect")
 
     # TODO: Apply polynomial optics shader when implemented
