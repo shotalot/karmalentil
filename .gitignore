@@ -1,0 +1,45 @@
+# Houdini
+*.hip.lock
+*.hipnc.lock
+backup/
+*.bak*
+*.blend*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Compiled files
+*.o
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Render output
+render/
+renders/
+*.exr
+*.jpg
+*.png
+*.tif
+*.tiff

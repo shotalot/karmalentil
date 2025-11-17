@@ -1,0 +1,178 @@
+// Lentil Camera Shader for Karma
+// Polynomial optics camera with realistic lens aberrations
+//
+// This shader generates camera rays with lens aberrations modeled
+// by polynomial functions fitted from real-world lens designs
+
+#pragma label enable_lentil "Enable Lentil"
+#pragma label lens_model "Lens Model"
+#pragma label focal_length "Focal Length (mm)"
+#pragma label fstop "F-Stop"
+#pragma label focus_distance "Focus Distance"
+#pragma label sensor_width "Sensor Width (mm)"
+#pragma label chromatic_aberration "Chromatic Aberration"
+#pragma label bokeh_blades "Bokeh Blades"
+#pragma label bokeh_rotation "Bokeh Rotation"
+
+// Include lens-specific files
+// NOTE: This path should be updated based on selected lens
+#include "../../lenses/double_gauss_50mm/lens_constants.h"
+#include "../../lenses/double_gauss_50mm/pt_evaluate.h"
+#include "../../lenses/double_gauss_50mm/pt_sample_aperture.h"
+#include "../include/lentil_utils.h"
+
+// Camera shader entry point
+cvex lentil_camera(
+    // Standard camera inputs
+    float Time = 0;
+    float samples[] = {};
+    int sid = 0;
+
+    // Camera parameters
+    int enable_lentil = 1;
+    string lens_model = "double_gauss_50mm";
+    float focal_length = 50.0;        // Focal length in mm
+    float fstop = 2.8;                 // F-stop (0 = wide open)
+    float focus_distance = 1000.0;     // Focus distance in mm
+    float sensor_width = 36.0;         // Sensor width in mm (36mm = full frame)
+    float chromatic_aberration = 1.0;  // CA strength (0 = disabled, 1 = full)
+    int bokeh_blades = 0;              // Aperture blade count (0-3 = circular)
+    float bokeh_rotation = 0.0;        // Bokeh rotation in radians
+
+    // Outputs
+    export vector P = 0;               // Ray origin
+    export vector I = 0;               // Ray direction
+    export float weight = 1.0)         // Ray weight
+{
+    // If lentil is disabled, fall back to pinhole camera
+    if (!enable_lentil) {
+        // Standard pinhole camera behavior
+        // Let Karma handle this
+        return;
+    }
+
+    // Get sample indices
+    int sample_idx = 0;
+    int num_samples = len(samples);
+
+    // Extract random samples for sensor and aperture
+    float sx = 0.5, sy = 0.5;          // Sensor samples
+    float ax = 0.5, ay = 0.5;          // Aperture samples
+    float lambda_sample = 0.5;         // Wavelength sample
+
+    if (num_samples >= 2) {
+        sx = samples[0];
+        sy = samples[1];
+    }
+    if (num_samples >= 4) {
+        ax = samples[2];
+        ay = samples[3];
+    }
+    if (num_samples >= 5) {
+        lambda_sample = samples[4];
+    }
+
+    // Map samples to sensor position (in mm)
+    // Sensor coordinates: centered at (0,0)
+    float sensor_height = sensor_width * 0.666667;  // Assume 3:2 aspect ratio
+    float sensor_x = (sx - 0.5) * sensor_width;
+    float sensor_y = (sy - 0.5) * sensor_height;
+
+    // Sample wavelength for chromatic aberration
+    float lambda = 0.55;  // Default to green (550nm = 0.55 micrometers)
+    vector ray_color = set(1, 1, 1);
+
+    if (chromatic_aberration > 0.01) {
+        // Sample one of three wavelengths (R, G, B)
+        int channel = int(floor(lambda_sample * 3.0));
+        channel = clamp(channel, 0, 2);
+
+        lambda = sample_wavelength_rgb(channel);
+
+        // Set ray color for this wavelength
+        if (channel == 0) ray_color = set(1, 0, 0);      // Red
+        else if (channel == 1) ray_color = set(0, 1, 0); // Green
+        else ray_color = set(0, 0, 1);                    // Blue
+
+        // Blend with CA strength
+        ray_color = lerp(set(1,1,1), ray_color, chromatic_aberration);
+    }
+
+    // Sample aperture direction using concentric disk mapping
+    float dx, dy;
+    concentric_disk_sample(ax, ay, dx, dy);
+
+    // Apply aperture blade shape (polygonal bokeh)
+    if (bokeh_blades >= 4) {
+        float dx_shaped, dy_shaped;
+        apply_aperture_blades(dx, dy, bokeh_blades, bokeh_rotation, dx_shaped, dy_shaped);
+        dx = dx_shaped;
+        dy = dy_shaped;
+    }
+
+    // Scale aperture by f-stop
+    float aperture_scale = get_aperture_scale(fstop, LENS_FSTOP_MIN);
+    dx *= aperture_scale;
+    dy *= aperture_scale;
+
+    // Prepare polynomial input
+    float poly_in[5];
+    poly_in[0] = sensor_x;
+    poly_in[1] = sensor_y;
+    poly_in[2] = dx;
+    poly_in[3] = dy;
+    poly_in[4] = lambda;
+
+    // Evaluate polynomial to get outer pupil position and direction
+    float poly_out[4];
+    float transmittance;
+    pt_evaluate(poly_in, poly_out, transmittance);
+
+    // Extract outer pupil parameters
+    float pupil_x = poly_out[0];
+    float pupil_y = poly_out[1];
+    float pupil_dx = poly_out[2];
+    float pupil_dy = poly_out[3];
+
+    // Normalize direction
+    float pupil_dz = 1.0;  // Forward direction
+    float dir_length = sqrt(pupil_dx*pupil_dx + pupil_dy*pupil_dy + pupil_dz*pupil_dz);
+    pupil_dx /= dir_length;
+    pupil_dy /= dir_length;
+    pupil_dz /= dir_length;
+
+    // Convert from lens space (mm) to world space
+    // Lens optical axis is aligned with -Z in camera space
+    // Outer pupil is at the front of the lens (z = LENS_FOCAL_LENGTH)
+
+    float lens_to_world_scale = 0.001;  // mm to meters (or adjust based on scene units)
+
+    // Ray origin at outer pupil (camera space)
+    vector ray_origin_camera = set(
+        pupil_x * lens_to_world_scale,
+        pupil_y * lens_to_world_scale,
+        -LENS_FOCAL_LENGTH * lens_to_world_scale
+    );
+
+    // Ray direction (camera space, pointing forward = -Z)
+    vector ray_dir_camera = set(
+        pupil_dx,
+        pupil_dy,
+        -pupil_dz  // Forward is -Z in Houdini camera space
+    );
+
+    // In actual implementation, these would be transformed by camera matrix
+    // For now, output in camera space
+    P = ray_origin_camera;
+    I = normalize(ray_dir_camera);
+
+    // Apply transmittance and color to weight
+    weight = transmittance;
+
+    // For chromatic aberration, modulate weight by color
+    // (In a path tracer, this would split into RGB rays)
+    // For now, just scale the weight
+    if (chromatic_aberration > 0.01) {
+        weight *= (ray_color.r + ray_color.g + ray_color.b) / 3.0;
+    }
+}
