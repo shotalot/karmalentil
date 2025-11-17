@@ -41,9 +41,18 @@ def create_lentil_camera_hda():
 
     temp_lop = stage.createNode('lopnet', 'temp_lentil_builder')
 
-    # Create the base camera node inside
+    # Create a subnet to contain the camera (required for HDA)
+    print("Creating subnet container...")
+    subnet = temp_lop.createNode('subnet', 'lentil_camera_subnet')
+
+    if not subnet:
+        print("ERROR: Failed to create subnet!")
+        temp_lop.destroy()
+        return None
+
+    # Create the camera node inside the subnet
     print("Creating camera LOP node...")
-    camera = temp_lop.createNode('camera', 'lentil_camera_internal')
+    camera = subnet.createNode('camera', 'lentil_camera_internal')
 
     if not camera:
         print("ERROR: Failed to create camera node!")
@@ -52,20 +61,26 @@ def create_lentil_camera_hda():
 
     print(f"✓ Camera node created: {camera.path()}")
 
-    # Set default camera parameters
-    try:
-        camera.parm('resx').set(1920)
-        camera.parm('resy').set(1080)
-        camera.parm('focal').set(50.0)
-        camera.parm('aperture').set(41.4214)
-        camera.parm('focus').set(5.0)
-        camera.parm('fstop').set(2.8)
-    except AttributeError as e:
-        print(f"Warning: Could not set camera parameter: {e}")
-        print("Camera may not have all expected parameters")
+    # Create output node in subnet
+    output = subnet.createNode('output', 'output0')
+    output.setInput(0, camera)
+    output.setDisplayFlag(True)
+    output.setRenderFlag(True)
 
-    # Get parameter template group to add lentil parameters
-    parm_template_group = camera.parmTemplateGroup()
+    # Set up subnet's input/output
+    subnet.setFirstInput(None)  # No input required
+
+    # Layout subnet contents
+    subnet.layoutChildren()
+
+    print(f"✓ Subnet created: {subnet.path()}")
+
+    # Now work with the camera parameters
+    # Note: Camera parameters might not exist until render time in LOPs
+    # So we'll just add our custom lentil parameters to the SUBNET
+
+    # Get parameter template group from the subnet (not camera)
+    parm_template_group = subnet.parmTemplateGroup()
 
     # Create Lentil Lens folder
     lentil_folder = hou.FolderParmTemplate('lentil_folder', 'Lentil Lens')
@@ -226,22 +241,22 @@ def create_lentil_camera_hda():
     # Add folder to template group
     parm_template_group.append(lentil_folder)
 
-    # Apply to camera
-    camera.setParmTemplateGroup(parm_template_group)
+    # Apply to subnet
+    subnet.setParmTemplateGroup(parm_template_group)
 
-    print("✓ Created camera with lentil parameters")
+    print("✓ Created subnet with lentil parameters")
 
-    # Now create the HDA from this node
-    # Select the camera node
-    camera.setSelected(True, clear_all_selected=True)
+    # Now create the HDA from the subnet
+    # Select the subnet node
+    subnet.setSelected(True, clear_all_selected=True)
 
     # Create HDA definition
     hda_node_type_name = "karmalentil::camera::1.0"
     hda_label = "KarmaLentil Camera"
 
     try:
-        # Create the HDA
-        hda_definition = camera.createDigitalAsset(
+        # Create the HDA from the subnet
+        hda_definition = subnet.createDigitalAsset(
             name=hda_node_type_name,
             hda_file_name=hda_path,
             description=hda_label,
