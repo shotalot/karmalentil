@@ -253,7 +253,8 @@ def create_lentil_camera_hda():
 
     try:
         # Create the HDA from the subnet
-        hda_definition = subnet.createDigitalAsset(
+        # Note: createDigitalAsset() returns the node instance, not the definition
+        hda_node = subnet.createDigitalAsset(
             name=hda_node_type_name,
             hda_file_name=hda_path,
             description=hda_label,
@@ -264,6 +265,9 @@ def create_lentil_camera_hda():
         print(f"✓ Created HDA: {hda_node_type_name}")
         print(f"✓ Saved to: {hda_path}")
         print()
+
+        # Get the actual HDA definition from the node's type
+        hda_definition = hda_node.type().definition()
 
         # Set HDA metadata
         hda_definition.setIcon('NETWORKS_camera')
@@ -358,6 +362,7 @@ Original project: https://github.com/zpelgrims/lentil
         print()
 
         # Clean up temp network
+        # Note: Destroy the temp network, not the HDA node
         temp_lop.destroy()
 
         print("=" * 70)
