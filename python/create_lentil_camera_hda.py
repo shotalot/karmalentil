@@ -268,8 +268,20 @@ def create_lentil_camera_hda():
         print(f"✓ Saved to: {hda_path}")
         print()
 
+        # DIAGNOSTIC: Check what was actually created
+        print("Diagnostics:")
+        print(f"  Created node: {hda_node}")
+        print(f"  Type: {hda_node.type()}")
+        print(f"  Type name: {hda_node.type().name()}")
+        print(f"  Category: {hda_node.type().category().name()}")
+        print()
+
         # Get the HDA definition
         hda_definition = hda_node.type().definition()
+        print(f"HDA Definition:")
+        print(f"  Node type name: {hda_definition.nodeTypeName()}")
+        print(f"  Node type category: {hda_definition.nodeTypeCategory().name()}")
+        print()
 
         # Set HDA metadata
         hda_definition.setIcon('NETWORKS_camera')
@@ -374,6 +386,37 @@ Original project: https://github.com/zpelgrims/lentil
         # Install the HDA from file (fresh, not the temp network's definition)
         hou.hda.installFile(hda_path)
         print("✓ Installed HDA in current session")
+        print()
+
+        # DIAGNOSTIC: Verify the node type is actually available
+        print("Verifying installation:")
+        installed_defs = hou.hda.definitionsInFile(hda_path)
+        for d in installed_defs:
+            print(f"  Installed definition: {d.nodeTypeName()}")
+            print(f"    Category: {d.nodeTypeCategory().name()}")
+            print(f"    Is installed: {d.isInstalled()}")
+        print()
+
+        # Try to verify the node type exists in LOP category
+        print("Checking if node type is available in LOP category:")
+        try:
+            lop_cat = hou.lopNodeTypeCategory()
+            # Try the exact name we used
+            node_type = lop_cat.nodeType("karmalentil::camera::1.0")
+            if node_type:
+                print(f"  ✓ SUCCESS: Node type found: {node_type}")
+            else:
+                print(f"  ✗ FAILED: nodeType() returned None")
+        except Exception as e:
+            print(f"  ✗ FAILED: {e}")
+            # Try listing all available node types with 'karmalentil' in the name
+            print("  Searching for any 'karmalentil' node types...")
+            all_types = lop_cat.nodeTypes()
+            karmalentil_types = [t for t in all_types.keys() if 'karmalentil' in t.lower()]
+            if karmalentil_types:
+                print(f"  Found: {karmalentil_types}")
+            else:
+                print(f"  No 'karmalentil' node types found in LOP category")
         print()
 
         print("=" * 70)
