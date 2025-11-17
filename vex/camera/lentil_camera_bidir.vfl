@@ -1,0 +1,170 @@
+// Lentil Camera Shader with Bidirectional Filtering Support
+// Extended version that outputs additional data for bidirectional filtering
+
+#pragma label enable_lentil "Enable Lentil"
+#pragma label lens_model "Lens Model"
+#pragma label focal_length "Focal Length (mm)"
+#pragma label fstop "F-Stop"
+#pragma label focus_distance "Focus Distance"
+#pragma label sensor_width "Sensor Width (mm)"
+#pragma label chromatic_aberration "Chromatic Aberration"
+#pragma label bokeh_blades "Bokeh Blades"
+#pragma label bokeh_rotation "Bokeh Rotation"
+#pragma label enable_bidirectional "Enable Bidirectional Filtering"
+#pragma label bidirectional_samples "Bidirectional Samples"
+
+// Include lens-specific files
+#include "../../lenses/double_gauss_50mm/lens_constants.h"
+#include "../../lenses/double_gauss_50mm/pt_evaluate.h"
+#include "../../lenses/double_gauss_50mm/pt_sample_aperture.h"
+#include "../include/lentil_utils.h"
+#include "../include/lentil_bidirectional.h"
+
+// Camera shader entry point with bidirectional support
+cvex lentil_camera_bidir(
+    // Standard camera inputs
+    float Time = 0;
+    float samples[] = {};
+    int sid = 0;
+
+    // Camera parameters
+    int enable_lentil = 1;
+    string lens_model = "double_gauss_50mm";
+    float focal_length = 50.0;
+    float fstop = 2.8;
+    float focus_distance = 1000.0;
+    float sensor_width = 36.0;
+    float chromatic_aberration = 1.0;
+    int bokeh_blades = 0;
+    float bokeh_rotation = 0.0;
+
+    // Bidirectional filtering parameters
+    int enable_bidirectional = 1;      // Enable bidirectional filtering
+    int bidirectional_samples = 32;     // Number of aperture samples for CoC estimation
+
+    // Outputs
+    export vector P = 0;                // Ray origin
+    export vector I = 0;                // Ray direction
+    export float weight = 1.0;          // Ray weight
+
+    // Additional outputs for bidirectional filtering
+    export float sensor_u = 0.5;        // Sensor U coordinate (normalized)
+    export float sensor_v = 0.5;        // Sensor V coordinate (normalized)
+    export float aperture_u = 0.5;      // Aperture U coordinate (normalized)
+    export float aperture_v = 0.5;      // Aperture V coordinate (normalized)
+    export float wavelength = 0.55)     // Wavelength in micrometers
+{
+    if (!enable_lentil) {
+        return;
+    }
+
+    // Extract random samples
+    int num_samples = len(samples);
+    float sx = 0.5, sy = 0.5;
+    float ax = 0.5, ay = 0.5;
+    float lambda_sample = 0.5;
+
+    if (num_samples >= 2) {
+        sx = samples[0];
+        sy = samples[1];
+    }
+    if (num_samples >= 4) {
+        ax = samples[2];
+        ay = samples[3];
+    }
+    if (num_samples >= 5) {
+        lambda_sample = samples[4];
+    }
+
+    // Store normalized sensor coordinates for bidirectional use
+    sensor_u = sx;
+    sensor_v = sy;
+    aperture_u = ax;
+    aperture_v = ay;
+
+    // Map to sensor position (mm)
+    float sensor_height = sensor_width * 0.666667;
+    float sensor_x = (sx - 0.5) * sensor_width;
+    float sensor_y = (sy - 0.5) * sensor_height;
+
+    // Sample wavelength
+    float lambda = 0.55;
+    vector ray_color = set(1, 1, 1);
+
+    if (chromatic_aberration > 0.01) {
+        int channel = int(floor(lambda_sample * 3.0));
+        channel = clamp(channel, 0, 2);
+        lambda = sample_wavelength_rgb(channel);
+
+        if (channel == 0) ray_color = set(1, 0, 0);
+        else if (channel == 1) ray_color = set(0, 1, 0);
+        else ray_color = set(0, 0, 1);
+
+        ray_color = lerp(set(1,1,1), ray_color, chromatic_aberration);
+    }
+
+    wavelength = lambda;  // Export for AOVs
+
+    // Sample aperture
+    float dx, dy;
+    concentric_disk_sample(ax, ay, dx, dy);
+
+    if (bokeh_blades >= 4) {
+        float dx_shaped, dy_shaped;
+        apply_aperture_blades(dx, dy, bokeh_blades, bokeh_rotation, dx_shaped, dy_shaped);
+        dx = dx_shaped;
+        dy = dy_shaped;
+    }
+
+    // Scale by f-stop
+    float aperture_scale = get_aperture_scale(fstop, LENS_FSTOP_MIN);
+    dx *= aperture_scale;
+    dy *= aperture_scale;
+
+    // Evaluate polynomial
+    float poly_in[5];
+    poly_in[0] = sensor_x;
+    poly_in[1] = sensor_y;
+    poly_in[2] = dx;
+    poly_in[3] = dy;
+    poly_in[4] = lambda;
+
+    float poly_out[4];
+    float transmittance;
+    pt_evaluate(poly_in, poly_out, transmittance);
+
+    float pupil_x = poly_out[0];
+    float pupil_y = poly_out[1];
+    float pupil_dx = poly_out[2];
+    float pupil_dy = poly_out[3];
+
+    // Normalize direction
+    float pupil_dz = 1.0;
+    float dir_length = sqrt(pupil_dx*pupil_dx + pupil_dy*pupil_dy + pupil_dz*pupil_dz);
+    pupil_dx /= dir_length;
+    pupil_dy /= dir_length;
+    pupil_dz /= dir_length;
+
+    // Convert to world space
+    float lens_to_world_scale = 0.001;
+
+    vector ray_origin_camera = set(
+        pupil_x * lens_to_world_scale,
+        pupil_y * lens_to_world_scale,
+        -focal_length * lens_to_world_scale
+    );
+
+    vector ray_dir_camera = set(
+        pupil_dx,
+        pupil_dy,
+        -pupil_dz
+    );
+
+    P = ray_origin_camera;
+    I = normalize(ray_dir_camera);
+    weight = transmittance;
+
+    if (chromatic_aberration > 0.01) {
+        weight *= (ray_color.r + ray_color.g + ray_color.b) / 3.0;
+    }
+}

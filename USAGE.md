@@ -178,6 +178,108 @@ bokeh_blades = 0  # Circular
 # Add bokeh_squeeze parameter (not in base implementation)
 ```
 
+## Bidirectional Filtering
+
+Bidirectional filtering creates more realistic bokeh by redistributing samples based on their circle of confusion. This is especially important for out-of-focus highlights.
+
+### When to Use Bidirectional Filtering
+
+**Use bidirectional filtering when**:
+- You have prominent out-of-focus highlights (bokeh balls)
+- Rendering portraits, macro, or product shots
+- Realistic camera look is critical
+- Depth of field is a key visual element
+
+**Skip bidirectional filtering when**:
+- Subtle DOF is sufficient
+- No bright out-of-focus elements
+- Performance is critical
+- Quick preview renders
+
+### Workflow
+
+#### 1. Render with Karma
+
+Render normally with lentil camera. Karma automatically outputs depth (P.z AOV):
+
+```python
+# In Karma ROP settings
+picture = $HIP/render/scene.$F4.exr
+pixelsamples = 1024  # 32x32 for smooth bokeh
+```
+
+#### 2. Apply Bidirectional Filter
+
+Use the Python post-process tool:
+
+```bash
+python python/bidirectional_filter.py \
+    render/scene.0001.exr \
+    render/scene_filtered.0001.exr \
+    --focus 1000 \
+    --fstop 2.8 \
+    --focal-length 50 \
+    --bokeh-intensity 1.0
+```
+
+**Parameters**:
+- `--focus`: Focus distance in mm (must match camera setting)
+- `--fstop`: F-stop (must match camera setting)
+- `--focal-length`: Focal length in mm
+- `--bokeh-intensity`: Highlight boost (0.0-3.0, default 1.0)
+- `--sensor-width`: Sensor width in mm (default 36.0)
+
+#### 3. Compare Results
+
+**Without bidirectional**: Soft, diffuse bokeh, highlights blend with surroundings
+**With bidirectional**: Distinct bokeh shapes, bright highlights preserved, "bokeh balls"
+
+### Bokeh Intensity Parameter
+
+Controls how much bright out-of-focus areas are emphasized:
+
+- **0.0**: Linear redistribution (no boost)
+- **1.0**: Realistic bokeh (recommended)
+- **1.5**: Prominent bokeh highlights
+- **2.0+**: Stylized/exaggerated effect
+
+Higher values create more dramatic bokeh but may look unrealistic.
+
+### Batch Processing
+
+For animation sequences:
+
+```bash
+# Process frame range
+for i in {1..100}; do
+    python python/bidirectional_filter.py \
+        render/scene.$(printf "%04d" $i).exr \
+        render/scene_filtered.$(printf "%04d" $i).exr \
+        --focus 1000 --fstop 2.8 --focal-length 50
+done
+```
+
+### Interactive Preview (COP Network)
+
+For interactive adjustment:
+
+```python
+# In Houdini Python shell
+import setup_bidirectional_render
+setup_bidirectional_render.setup_cop_network_for_bidirectional()
+```
+
+Then adjust parameters in the COP network to see results in real-time.
+
+### Technical Notes
+
+- Post-processing adds ~5-15% to total render time
+- Memory usage: ~24MB per 1920×1080 frame
+- Requires NumPy for optimal performance
+- Can be parallelized for multi-frame processing
+
+See [BIDIRECTIONAL.md](BIDIRECTIONAL.md) for complete technical documentation.
+
 ## Render Settings
 
 ### Karma Pixel Samples
