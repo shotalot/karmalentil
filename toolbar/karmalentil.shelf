@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <shelfDocument>
-  <!-- KarmaLentil Shelf Set -->
-  <shelfSet name="karmalentil" label="KarmaLentil">
+  <!-- KarmaLentil Shelf -->
+  <toolshelf name="karmalentil" label="KarmaLentil">
     <memberTool name="lentil_camera"/>
     <memberTool name="lentil_filter"/>
     <memberTool name="lentil_import_lens"/>
     <memberTool name="lentil_help"/>
-  </shelfSet>
+  </toolshelf>
 
   <!-- Lentil Camera Tool -->
   <tool name="lentil_camera" label="Lentil Camera" icon="NETWORKS_camera">
