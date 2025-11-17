@@ -50,7 +50,10 @@ def apply_lentil_to_camera(node):
     # These control Karma's depth of field rendering
 
     # Focal length (convert mm to cm for Houdini)
-    if node.parm('focal'):
+    # LOP cameras use 'focallength' not 'focal'
+    if node.parm('focallength'):
+        node.parm('focallength').set(focal_length)  # in mm
+    elif node.parm('focal'):
         node.parm('focal').set(focal_length / 10.0)  # mm to cm
 
     # F-stop
@@ -58,16 +61,34 @@ def apply_lentil_to_camera(node):
         node.parm('fstop').set(fstop)
 
     # Focus distance
-    if node.parm('focus'):
+    # LOP cameras use 'focusdistance' not 'focus'
+    if node.parm('focusdistance'):
+        node.parm('focusdistance').set(focus_distance_m)
+    elif node.parm('focus'):
         node.parm('focus').set(focus_distance_m)
 
     # Enable depth of field
-    if node.parm('depthoffield'):
+    # LOP cameras may not have this toggle - DOF is always on if fstop < inf
+    if node.parm('dof'):
+        node.parm('dof').set(1)
+    elif node.parm('depthoffield'):
         node.parm('depthoffield').set(1)
 
-    # Set aperture (sensor width)
-    if node.parm('aperture'):
-        node.parm('aperture').set(sensor_width / 10.0)  # mm to cm
+    # Set aperture (sensor width) - handle both float and string types
+    aperture_cm = sensor_width / 10.0  # mm to cm
+    if node.parm('horizontalaperture'):
+        # LOP camera parameter
+        try:
+            node.parm('horizontalaperture').set(aperture_cm)
+        except TypeError:
+            # If it's a string parameter
+            node.parm('horizontalaperture').set(str(aperture_cm))
+    elif node.parm('aperture'):
+        try:
+            node.parm('aperture').set(aperture_cm)
+        except TypeError:
+            # If it's a string parameter
+            node.parm('aperture').set(str(aperture_cm))
 
     print(f"  Applied DOF: focal={focal_length}mm, f/{fstop}, focus={focus_distance}mm")
     print(f"  TIP: Render or use Karma viewport to see depth of field effect")
@@ -80,9 +101,15 @@ def disable_lentil_on_camera(node):
     """
     Disable lentil on the camera - restore default DOF off
     """
-    # Disable depth of field
-    if node.parm('depthoffield'):
+    # Disable depth of field (or set fstop very high to effectively disable)
+    if node.parm('dof'):
+        node.parm('dof').set(0)
+    elif node.parm('depthoffield'):
         node.parm('depthoffield').set(0)
+    else:
+        # If no DOF toggle exists, set fstop to very high value
+        if node.parm('fstop'):
+            node.parm('fstop').set(64.0)
 
     print(f"  Disabled DOF on camera")
 
