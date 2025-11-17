@@ -14,27 +14,26 @@ if karmalentil_path:
     if python_path not in sys.path:
         sys.path.insert(0, python_path)
 
-# Import and create lentil camera
+# Import and create lentil camera in LOPs
 try:
-    import setup_complete_lentil
-    cam, rop = setup_complete_lentil.main()
+    import setup_lentil_lops
+    lop_network, camera = setup_lentil_lops.main()
 
-    if cam:
-        # Select and frame the camera
-        cam.setSelected(True, clear_all_selected=True)
+    if lop_network:
+        # Select the LOP network
+        lop_network.setSelected(True, clear_all_selected=True)
 
-        # Set viewport to camera view
+        # Set viewport to show the LOP network
         scene_viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
         if scene_viewer:
-            viewport = scene_viewer.curViewport()
-            viewport.setCamera(cam)
+            scene_viewer.setPwd(lop_network)
 
         hou.ui.displayMessage(
-            "Lentil Camera Created!\n\n"
-            "Camera: {}\n"
-            "Render: {}\n\n"
-            "Adjust parameters in the camera's Lentil tabs.\n"
-            "Viewport is now in Karma render mode.".format(cam.path(), rop.path()),
+            "Lentil Camera Created in LOPs!\n\n"
+            "LOP Network: {}\n"
+            "Camera: /cameras/lentil_camera\n\n"
+            "Adjust parameters in the camera's Lentil Lens tab.\n"
+            "Viewport is configured for Karma rendering.".format(lop_network.path()),
             severity=hou.severityType.Message,
             title="KarmaLentil"
         )
