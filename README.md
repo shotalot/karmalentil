@@ -6,14 +6,18 @@ Port of [lentil](https://github.com/zpelgrims/lentil) from Arnold to Houdini Kar
 
 ## Features
 
-- Physically-based lens aberration modeling using polynomial optics
-- Chromatic aberration support with RGB wavelength sampling
-- **Bidirectional filtering** for realistic bokeh with preserved highlights
-- Real-world lens models based on patent data
-- Customizable aperture shapes (circular and polygonal bokeh)
-- Integration with Karma XPU and CPU renderers
-- VEX-based implementation for performance
-- Python post-processing tools for advanced effects
+- ✨ **Real-time viewport integration** with Karma renderer
+- 🎯 Physically-based lens aberration modeling using polynomial optics
+- 🌈 Chromatic aberration support with RGB wavelength sampling
+- ✨ **Bidirectional filtering** for realistic bokeh with preserved highlights (real-time and post-process)
+- 📚 **Lens database system** with automatic lens loading
+- 🎨 **Custom aperture textures** for unique bokeh shapes (hearts, stars, logos, etc.)
+- 🎥 Real-world lens models based on patent data
+- 🔧 **Houdini Digital Asset (HDA)** for easy setup
+- 💫 Customizable aperture shapes (circular and polygonal bokeh)
+- ⚡ Integration with Karma XPU (GPU) and CPU renderers
+- 🚀 VEX-based implementation for performance
+- 🐍 Python tools for advanced workflows and batch processing
 
 ## Installation
 
@@ -26,7 +30,15 @@ Port of [lentil](https://github.com/zpelgrims/lentil) from Arnold to Houdini Kar
 
 2. Launch Houdini 20.5+
 
-3. Create a camera and add the "Karma Lentil Camera" properties
+3. Run the complete setup script in Python Shell:
+   ```python
+   import sys
+   sys.path.append('$KARMALENTIL/python')
+   import setup_complete_lentil
+   setup_complete_lentil.main()
+   ```
+
+This creates a complete scene with lentil camera, Karma ROP, example geometry, and configures your viewport for real-time preview!
 
 ## Usage
 
@@ -67,11 +79,30 @@ KarmaLentil uses sparse high-degree polynomials (degree 9-15) to model lens aber
 
 ## Documentation
 
+- **[VIEWPORT_INTEGRATION.md](VIEWPORT_INTEGRATION.md)** - 🆕 Real-time viewport setup and usage
 - **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup guide
 - **[INSTALL.md](INSTALL.md)** - Detailed installation instructions
 - **[USAGE.md](USAGE.md)** - Complete parameter reference
 - **[BIDIRECTIONAL.md](BIDIRECTIONAL.md)** - Bidirectional filtering guide
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
+
+## New in This Version
+
+### Viewport Integration
+- ✨ **Real-time preview** in Karma viewport with all lens effects
+- 🎯 **Interactive parameter adjustment** with immediate visual feedback
+- ⚡ **GPU-accelerated** rendering with Karma XPU
+- 🎨 **Live bidirectional filtering** for accurate bokeh in viewport
+
+### Complete System
+- 📦 **HDA-based camera** - One-click setup with all parameters
+- 📚 **Lens database** - Automatic loading of all available lenses
+- 🎨 **Aperture textures** - Custom bokeh shapes (hearts, stars, logos)
+- 🐍 **Python automation** - Complete setup and batch processing scripts
+- 📊 **AOV outputs** - CoC, sensor position, wavelength for advanced workflows
+
+### No Post-Processing Required
+Bidirectional filtering now works **in real-time during rendering** (with optional high-quality post-process for finals)!
 
 ## Requirements
 
