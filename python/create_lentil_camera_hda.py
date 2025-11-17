@@ -373,16 +373,9 @@ Original project: https://github.com/zpelgrims/lentil
         # DON'T destroy temp network yet - it will invalidate the HDA
         # The caller should destroy it AFTER successfully creating an instance
 
-        # Now uninstall any existing broken definitions
-        existing_defs = hou.hda.definitionsInFile(hda_path)
-        for existing_def in existing_defs:
-            if existing_def.isInstalled():
-                hou.hda.uninstallFile(hda_path)
-                break
-
-        # Install the HDA from file (fresh, not the temp network's definition)
-        hou.hda.installFile(hda_path)
-        print("✓ Installed HDA in current session")
+        # Note: createDigitalAsset() already installs the HDA automatically
+        # No need to uninstall/reinstall - that can cause conflicts
+        print("✓ HDA automatically installed by createDigitalAsset()")
         print()
 
         # DIAGNOSTIC: Verify the node type is actually available
