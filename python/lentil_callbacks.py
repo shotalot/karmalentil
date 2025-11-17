@@ -49,6 +49,13 @@ def apply_lentil_to_camera(node):
     print(f"    lentil_focus_distance = {focus_distance}")
     print(f"    lentil_sensor_width = {sensor_width}")
 
+    # DEBUG: List all camera parameters to find the right names
+    print(f"  Available camera parameters:")
+    all_parms = [p.name() for p in node.parms()]
+    camera_parms = [p for p in all_parms if any(keyword in p.lower() for keyword in ['focal', 'focus', 'fstop', 'aperture', 'dof'])]
+    for p in camera_parms:
+        print(f"    - {p}")
+
     # Validate parameters - don't apply if they're invalid
     if focal_length <= 0:
         print(f"  ERROR: Invalid focal length ({focal_length}), skipping application")
