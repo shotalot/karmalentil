@@ -25,17 +25,11 @@ def initialize_karmalentil():
     if os.path.exists(python_path) and python_path not in sys.path:
         sys.path.insert(0, python_path)
 
-    # Build HDA if it doesn't exist
+    # Check if HDA exists (don't build during startup - UI not ready yet)
     hda_path = os.path.join(karmalentil_path, "otls", "karmalentil_camera.hda")
     if not os.path.exists(hda_path):
-        print("KarmaLentil: Building camera HDA for first-time use...")
-        try:
-            import create_lentil_camera_hda
-            create_lentil_camera_hda.create_lentil_camera_hda()
-            print("KarmaLentil: HDA built successfully!")
-        except Exception as e:
-            print("KarmaLentil: Warning - Could not build HDA: {}".format(e))
-            print("  You can build it manually: Python Shell -> import create_lentil_camera_hda; create_lentil_camera_hda.create_lentil_camera_hda()")
+        print("KarmaLentil: Camera HDA not found (will be built on first use)")
+        print("  Click 'Lentil Camera' shelf tool to auto-build")
 
     # Initialize lens database
     try:
@@ -51,11 +45,13 @@ def initialize_karmalentil():
         print("KarmaLentil: Warning - Could not initialize lens database: {}".format(e))
 
     # Print welcome message
+    hda_status = "ready" if os.path.exists(hda_path) else "will build on first use"
+
     print("")
     print("=" * 60)
     print("KarmaLentil - Polynomial Optics for Houdini Karma")
     print("=" * 60)
-    print("HDA: karmalentil::camera::1.0 (ready to use)")
+    print("HDA: karmalentil::camera::1.0 ({})".format(hda_status))
     print("Shelf: karmalentil")
     print("Documentation: $KARMALENTIL/")
     print("")
