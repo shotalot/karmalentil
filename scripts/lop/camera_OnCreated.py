@@ -232,19 +232,19 @@ def add_lentil_spare_parameters(node):
         )
     )
 
-    # Insert the folder at the calculated position (preserves existing folders like Karma)
-    # Get all current entries
-    all_entries = list(ptg.entries())
+    # Insert the lentil folder WITHOUT rebuilding the entire group
+    # This preserves all existing folders including Karma
 
-    # Insert lentil folder at the desired position
-    all_entries.insert(insert_index, lentil_folder)
+    # Get all entries to find the insertion reference
+    entries = ptg.entries()
 
-    # Clear and rebuild the parameter template group
-    while len(ptg.entries()) > 0:
-        ptg.remove(ptg.entries()[0])
-
-    for entry in all_entries:
-        ptg.append(entry)
+    if insert_index < len(entries):
+        # Insert before the entry at insert_index
+        reference_template = entries[insert_index]
+        ptg.insertBefore(reference_template.name(), lentil_folder)
+    else:
+        # Append at the end
+        ptg.append(lentil_folder)
 
     # Apply the modified parameter template group back to the node
     node.setParmTemplateGroup(ptg)
