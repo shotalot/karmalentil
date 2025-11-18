@@ -1,17 +1,23 @@
 #!/usr/bin/env python
 """
 Lens Database System for KarmaLentil
-Manages lens models, loads polynomial data, and provides lens selection interface
+Manages lens models, loads polynomial data from JSON files
 """
 
 import os
 import json
 import glob
 
+try:
+    import hou
+    HOU_AVAILABLE = True
+except ImportError:
+    HOU_AVAILABLE = False
+
 
 class LensDatabase:
     """
-    Lens database manager
+    Lens database manager - loads lens data from JSON files
     """
 
     def __init__(self, database_path=None):
@@ -23,7 +29,13 @@ class LensDatabase:
         """
         if database_path is None:
             # Use environment variable or default
-            karmalentil_root = os.environ.get('KARMALENTIL', os.path.dirname(os.path.dirname(__file__)))
+            if HOU_AVAILABLE:
+                karmalentil_root = hou.getenv('KARMALENTIL')
+                if not karmalentil_root:
+                    karmalentil_root = os.environ.get('KARMALENTIL', os.path.dirname(os.path.dirname(__file__)))
+            else:
+                karmalentil_root = os.environ.get('KARMALENTIL', os.path.dirname(os.path.dirname(__file__)))
+
             database_path = os.path.join(karmalentil_root, 'lenses')
 
         self.database_path = database_path
@@ -32,183 +44,150 @@ class LensDatabase:
 
     def load_database(self):
         """
-        Load all available lenses from database
+        Load all available lenses from JSON files in database directory
         """
         if not os.path.exists(self.database_path):
-            print(f"Warning: Lens database not found at {self.database_path}")
+            print(f"KarmaLentil: Warning - Lens database not found at {self.database_path}")
             return
 
-        # Scan for lens directories
-        lens_dirs = glob.glob(os.path.join(self.database_path, '*'))
+        # Scan for JSON lens files
+        json_files = glob.glob(os.path.join(self.database_path, '*.json'))
 
-        for lens_dir in lens_dirs:
-            if not os.path.isdir(lens_dir):
-                continue
+        if not json_files:
+            print(f"KarmaLentil: Warning - No lens JSON files found in {self.database_path}")
+            return
 
-            lens_name = os.path.basename(lens_dir)
+        for json_file in json_files:
+            lens_id = os.path.splitext(os.path.basename(json_file))[0]
 
-            # Check for required files
-            required_files = [
-                'lens_constants.h',
-                'pt_evaluate.h'
-            ]
+            try:
+                with open(json_file, 'r') as f:
+                    lens_data = json.load(f)
 
-            has_all = all(os.path.exists(os.path.join(lens_dir, f)) for f in required_files)
+                    # Store lens data
+                    self.lenses[lens_id] = lens_data
 
-            if has_all:
-                # Parse lens constants
-                constants = self.parse_lens_constants(lens_dir)
+                    lens_name = lens_data.get('name', lens_id)
+                    print(f"KarmaLentil: Loaded lens '{lens_name}' ({lens_id})")
 
-                self.lenses[lens_name] = {
-                    'name': lens_name,
-                    'path': lens_dir,
-                    'constants': constants,
-                    'display_name': self.format_lens_name(lens_name)
-                }
+            except Exception as e:
+                print(f"KarmaLentil: ERROR loading {json_file}: {e}")
 
-                print(f"Loaded lens: {lens_name}")
-
-    def parse_lens_constants(self, lens_dir):
+    def get_lens(self, lens_id):
         """
-        Parse lens constants from lens_constants.h
+        Get lens data by ID
 
         Args:
-            lens_dir: Path to lens directory
+            lens_id: Lens identifier (e.g., 'double_gauss_50mm')
 
         Returns:
-            Dictionary of lens constants
+            Dictionary with complete lens data, or None if not found
         """
-        constants_file = os.path.join(lens_dir, 'lens_constants.h')
-        constants = {}
-
-        if not os.path.exists(constants_file):
-            return constants
-
-        with open(constants_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-
-                # Parse #define statements
-                if line.startswith('#define'):
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        key = parts[1]
-                        value = parts[2]
-
-                        # Try to convert to number
-                        try:
-                            if '.' in value:
-                                value = float(value)
-                            else:
-                                value = int(value)
-                        except ValueError:
-                            pass  # Keep as string
-
-                        constants[key] = value
-
-                # Parse const statements
-                elif line.startswith('const float') or line.startswith('const int'):
-                    # Extract variable name and value
-                    if '=' in line:
-                        parts = line.split('=')
-                        name_part = parts[0].strip().split()[-1]
-                        value_part = parts[1].strip().rstrip(';')
-
-                        try:
-                            if '.' in value_part:
-                                value = float(value_part)
-                            else:
-                                value = int(value_part)
-                            constants[name_part] = value
-                        except ValueError:
-                            pass
-
-        return constants
-
-    def format_lens_name(self, lens_name):
-        """
-        Format lens name for display
-
-        Args:
-            lens_name: Internal lens name (e.g., 'double_gauss_50mm')
-
-        Returns:
-            Display name (e.g., 'Double Gauss 50mm')
-        """
-        # Replace underscores with spaces and capitalize
-        display_name = lens_name.replace('_', ' ').title()
-
-        # Add f-stop if available
-        # (Could parse from constants here)
-
-        return display_name
+        return self.lenses.get(lens_id)
 
     def get_lens_list(self):
         """
         Get list of available lenses
 
         Returns:
-            List of (lens_name, display_name) tuples
+            List of (lens_id, display_name) tuples sorted alphabetically
         """
-        return [(name, info['display_name']) for name, info in self.lenses.items()]
+        lens_list = []
+        for lens_id, lens_data in self.lenses.items():
+            lens_name = lens_data.get('name', lens_id)
+            lens_list.append((lens_id, lens_name))
 
-    def get_lens_info(self, lens_name):
+        return sorted(lens_list, key=lambda x: x[1])
+
+    def get_lens_info(self, lens_id):
         """
-        Get information about a specific lens
+        Get information about a specific lens (alias for get_lens)
 
         Args:
-            lens_name: Internal lens name
+            lens_id: Lens identifier
 
         Returns:
             Dictionary with lens information or None if not found
         """
-        return self.lenses.get(lens_name)
+        return self.get_lens(lens_id)
 
-    def get_lens_path(self, lens_name):
+    def get_polynomial_coefficients(self, lens_id):
         """
-        Get path to lens directory
+        Get polynomial coefficients for a lens
 
         Args:
-            lens_name: Internal lens name
+            lens_id: Lens identifier
 
         Returns:
-            Path to lens directory or None if not found
+            Dictionary with 'exit_pupil_x' and 'exit_pupil_y' coefficient arrays,
+            or None if lens not found
         """
-        info = self.get_lens_info(lens_name)
-        return info['path'] if info else None
+        lens = self.get_lens(lens_id)
+        if not lens:
+            return None
 
-    def get_lens_constants(self, lens_name):
+        return lens.get('coefficients')
+
+    def get_polynomial_degree(self, lens_id):
         """
-        Get lens constants
+        Get polynomial degree for a lens
 
         Args:
-            lens_name: Internal lens name
+            lens_id: Lens identifier
 
         Returns:
-            Dictionary of lens constants or None if not found
+            Integer polynomial degree, or None if lens not found
         """
-        info = self.get_lens_info(lens_name)
-        return info['constants'] if info else None
+        lens = self.get_lens(lens_id)
+        if not lens:
+            return None
 
-    def export_to_json(self, output_path):
+        return lens.get('polynomial_degree', 5)
+
+    def apply_lens_to_camera(self, camera_node, lens_id):
         """
-        Export lens database to JSON
+        Apply lens parameters to a camera node
 
         Args:
-            output_path: Path to output JSON file
+            camera_node: Camera LOP node
+            lens_id: Lens identifier to apply
+
+        Returns:
+            True if successful, False otherwise
         """
-        export_data = {}
+        if not HOU_AVAILABLE:
+            print("KarmaLentil: ERROR - Houdini module not available")
+            return False
 
-        for lens_name, info in self.lenses.items():
-            export_data[lens_name] = {
-                'display_name': info['display_name'],
-                'constants': info['constants']
-            }
+        lens = self.get_lens(lens_id)
+        if not lens:
+            print(f"KarmaLentil: ERROR - Lens '{lens_id}' not found")
+            return False
 
-        with open(output_path, 'w') as f:
-            json.dump(export_data, f, indent=2)
+        try:
+            # Update focal length
+            if camera_node.parm('lentil_focal_length'):
+                focal_length = lens.get('focal_length', 50.0)
+                camera_node.parm('lentil_focal_length').set(focal_length)
 
-        print(f"Exported lens database to: {output_path}")
+            # Update f-stop
+            if camera_node.parm('lentil_fstop'):
+                max_fstop = lens.get('max_fstop', 2.8)
+                camera_node.parm('lentil_fstop').set(max_fstop)
+
+            # Update sensor width
+            if camera_node.parm('lentil_sensor_width'):
+                sensor_width = lens.get('sensor_width', 36.0)
+                camera_node.parm('lentil_sensor_width').set(sensor_width)
+
+            print(f"KarmaLentil: Applied lens '{lens.get('name', lens_id)}' to {camera_node.path()}")
+            return True
+
+        except Exception as e:
+            print(f"KarmaLentil: ERROR applying lens: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def generate_menu_items(self):
         """
@@ -217,57 +196,86 @@ class LensDatabase:
         Returns:
             Tuple of (menu_items, menu_labels)
         """
-        lenses = sorted(self.lenses.items(), key=lambda x: x[1]['display_name'])
+        lens_list = self.get_lens_list()
 
-        menu_items = [name for name, info in lenses]
-        menu_labels = [info['display_name'] for name, info in lenses]
+        if not lens_list:
+            return (['none'], ['No Lenses Available'])
+
+        menu_items = [lens_id for lens_id, _ in lens_list]
+        menu_labels = [lens_name for _, lens_name in lens_list]
 
         return menu_items, menu_labels
 
-    def search_lenses(self, query):
+    def export_lens_for_vex(self, lens_id, output_path):
         """
-        Search lenses by name or characteristics
+        Export lens data in a format VEX can read efficiently
+
+        VEX can't easily read JSON, so we export in a simple text format:
+        Line 1: polynomial_degree
+        Line 2: focal_length
+        Line 3: max_fstop
+        Line 4: sensor_width
+        Line 5+: exit_pupil_x coefficients (space-separated)
+        Line N+: exit_pupil_y coefficients (space-separated)
 
         Args:
-            query: Search query string
+            lens_id: Lens identifier
+            output_path: Path to write VEX-readable file
 
         Returns:
-            List of matching lens names
+            True if successful, False otherwise
         """
-        query_lower = query.lower()
-        matches = []
+        lens = self.get_lens(lens_id)
+        if not lens:
+            print(f"KarmaLentil: ERROR - Lens '{lens_id}' not found")
+            return False
 
-        for lens_name, info in self.lenses.items():
-            # Search in name and display name
-            if (query_lower in lens_name.lower() or
-                query_lower in info['display_name'].lower()):
-                matches.append(lens_name)
-                continue
+        try:
+            with open(output_path, 'w') as f:
+                # Write metadata
+                f.write(f"{lens.get('polynomial_degree', 5)}\n")
+                f.write(f"{lens.get('focal_length', 50.0)}\n")
+                f.write(f"{lens.get('max_fstop', 2.8)}\n")
+                f.write(f"{lens.get('sensor_width', 36.0)}\n")
 
-            # Search in constants (e.g., focal length)
-            constants = info['constants']
-            if 'LENS_FOCAL_LENGTH' in constants:
-                focal = str(constants['LENS_FOCAL_LENGTH'])
-                if query_lower in focal.lower():
-                    matches.append(lens_name)
+                # Write polynomial coefficients
+                coeffs = lens.get('coefficients', {})
+                exit_pupil_x = coeffs.get('exit_pupil_x', [])
+                exit_pupil_y = coeffs.get('exit_pupil_y', [])
 
-        return matches
+                # Write x coefficients (space-separated)
+                f.write(' '.join(str(c) for c in exit_pupil_x) + '\n')
+
+                # Write y coefficients (space-separated)
+                f.write(' '.join(str(c) for c in exit_pupil_y) + '\n')
+
+            print(f"KarmaLentil: Exported lens '{lens.get('name', lens_id)}' for VEX to {output_path}")
+            return True
+
+        except Exception as e:
+            print(f"KarmaLentil: ERROR exporting lens for VEX: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
 
-def create_lens_database_json():
+# Global singleton instance
+_lens_database_instance = None
+
+
+def get_lens_database():
     """
-    Create lens database JSON file
+    Get global lens database instance (singleton pattern)
+
+    Returns:
+        LensDatabase instance
     """
-    db = LensDatabase()
+    global _lens_database_instance
 
-    # Get output path
-    karmalentil_root = os.environ.get('KARMALENTIL', os.path.dirname(os.path.dirname(__file__)))
-    output_path = os.path.join(karmalentil_root, 'lenses', 'lens_database.json')
+    if _lens_database_instance is None:
+        _lens_database_instance = LensDatabase()
 
-    # Export
-    db.export_to_json(output_path)
-
-    return output_path
+    return _lens_database_instance
 
 
 def main():
@@ -275,32 +283,32 @@ def main():
     Test lens database
     """
     print("=" * 70)
-    print("Lens Database")
+    print("KarmaLentil Lens Database")
     print("=" * 70)
 
     db = LensDatabase()
 
-    print(f"\nFound {len(db.lenses)} lenses:")
-    for lens_name, info in db.lenses.items():
-        print(f"\n  {info['display_name']}")
-        print(f"    Internal name: {lens_name}")
-        print(f"    Path: {info['path']}")
+    print(f"\nFound {len(db.lenses)} lens(es):")
+    for lens_id, lens_data in db.lenses.items():
+        print(f"\n  {lens_data.get('name', lens_id)}")
+        print(f"    ID: {lens_id}")
+        print(f"    Focal length: {lens_data.get('focal_length')}mm")
+        print(f"    Max f-stop: f/{lens_data.get('max_fstop')}")
+        print(f"    Sensor width: {lens_data.get('sensor_width')}mm")
+        print(f"    Polynomial degree: {lens_data.get('polynomial_degree')}")
 
-        constants = info['constants']
-        if 'LENS_FOCAL_LENGTH' in constants:
-            print(f"    Focal length: {constants['LENS_FOCAL_LENGTH']}mm")
-        if 'LENS_FSTOP_MIN' in constants:
-            print(f"    Min f-stop: f/{constants['LENS_FSTOP_MIN']}")
+        # Count coefficients
+        coeffs = lens_data.get('coefficients', {})
+        if coeffs:
+            num_coeffs_x = len(coeffs.get('exit_pupil_x', []))
+            num_coeffs_y = len(coeffs.get('exit_pupil_y', []))
+            print(f"    Coefficients: {num_coeffs_x} (x), {num_coeffs_y} (y)")
 
     # Generate menu items
     menu_items, menu_labels = db.generate_menu_items()
-    print("\nMenu items for Houdini:")
+    print("\nMenu items for Houdini parameter:")
     for item, label in zip(menu_items, menu_labels):
         print(f"  {item}: {label}")
-
-    # Create JSON export
-    output_path = create_lens_database_json()
-    print(f"\nExported database to: {output_path}")
 
     return db
 

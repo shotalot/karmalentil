@@ -61,13 +61,32 @@ def add_lentil_spare_parameters(node):
     })
     lentil_folder.addParmTemplate(enable_parm)
 
-    # Lens model menu
+    # Lens model menu - dynamically populated from lens database
+    # Get lens database and generate menu
+    try:
+        import sys
+        import os
+        karmalentil_path = hou.getenv('KARMALENTIL')
+        if karmalentil_path:
+            python_path = os.path.join(karmalentil_path, 'python')
+            if python_path not in sys.path:
+                sys.path.insert(0, python_path)
+
+        from lens_database import get_lens_database
+        db = get_lens_database()
+        menu_items, menu_labels = db.generate_menu_items()
+    except Exception as e:
+        print(f"KarmaLentil: Warning - Could not load lens database: {e}")
+        # Fallback to default lens
+        menu_items = ['double_gauss_50mm']
+        menu_labels = ['Double Gauss 50mm f/2.8']
+
     lentil_folder.addParmTemplate(
         hou.MenuParmTemplate(
             'lens_model',
             'Lens Model',
-            menu_items=('double_gauss_50mm',),
-            menu_labels=('Double Gauss 50mm f/2.8',),
+            menu_items=tuple(menu_items),
+            menu_labels=tuple(menu_labels),
             default_value=0,
             help='Select lens model from database'
         )

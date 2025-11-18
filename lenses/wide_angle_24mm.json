@@ -1,0 +1,40 @@
+{
+  "name": "Wide Angle 24mm f/2.8",
+  "description": "Wide-angle lens with noticeable distortion and strong vignetting",
+  "focal_length": 24.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Polynomial coefficients for ray mapping with wide-angle distortion characteristics",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.08, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.05, 0.0,
+      0.0, 0.0, 0.025,
+      0.0, 0.0,
+      -0.005
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.08, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.05,
+      0.0, 0.0, 0.0,
+      0.0, 0.025,
+      -0.005
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.18,
+    "coma": 0.12,
+    "astigmatism": 0.08,
+    "field_curvature": 0.06,
+    "distortion": 0.15,
+    "chromatic_longitudinal": 0.12,
+    "chromatic_lateral": 0.08
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.45
+  }
+}

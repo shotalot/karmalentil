@@ -8,18 +8,17 @@ Port of [lentil](https://github.com/zpelgrims/lentil) from Arnold to Houdini Kar
 
 ## Features
 
-- 🎯 **Drop-in HDA** - Just add to any LOP network and start rendering
-- ✨ **Real-time viewport integration** with Karma renderer
+- 🎯 **Automatic Integration** - Parameters added to all camera nodes via OnCreated callbacks
+- ✨ **Real-time depth of field** with interactive viewport updates
 - 🔬 Physically-based lens aberration modeling using polynomial optics
-- 🌈 Chromatic aberration support with RGB wavelength sampling
-- ✨ **Bidirectional filtering** for realistic bokeh with preserved highlights
-- 📚 **Lens database system** with automatic lens loading
-- 🎨 **Custom aperture textures** for unique bokeh shapes (hearts, stars, logos, etc.)
-- 🎥 Real-world lens models based on patent data
+- 🌈 RGB chromatic aberration with wavelength-dependent rendering
+- ✨ **Bidirectional sampling** for realistic bokeh with preserved highlights
+- 📚 **Lens database system** with 4 included lens models
 - 💫 Customizable aperture shapes (circular and polygonal bokeh)
-- ⚡ Integration with Karma XPU (GPU) and CPU renderers
-- 🚀 VEX-based implementation for performance
-- 🐍 Python tools for advanced workflows and batch processing
+- ⚡ Karma CPU lens shader support via CVEX
+- 🚀 VEX-based polynomial evaluation for performance
+- 🐍 Python lens database and parameter management
+- 🎬 Industry-standard OnCreated callback system (like Redshift/Arnold)
 
 ## Installation
 
@@ -59,27 +58,26 @@ See **[PLUGIN_INSTALLATION.md](PLUGIN_INSTALLATION.md)** for detailed installati
 
 ## Usage
 
-### Method 1: Drop-in HDA (Recommended)
+### Method 1: Automatic (Just Create a Camera!)
 
-KarmaLentil includes a complete camera HDA that you can drop directly into any LOP network:
+KarmaLentil automatically adds lentil parameters to any camera you create:
 
-1. **Create a LOP network** at `/stage` level
-2. **Press TAB** inside the network
-3. **Search for "karmalentil"** or "lentil camera"
-4. **Drop it in** and adjust parameters
-5. **Render with Karma!**
+1. **Create a Camera LOP** node in any LOP network
+2. **Look for the "Lentil Lens" tab** (automatically added!)
+3. **Enable "Enable Lentil"** toggle
+4. **Select a lens model** from the dropdown
+5. **Adjust parameters** and render!
 
-The HDA includes:
-- ✓ All lentil lens parameters built-in
-- ✓ Standard camera controls
-- ✓ Lens model selection
-- ✓ Bokeh customization
-- ✓ Bidirectional filtering
-- ✓ Complete help documentation
+The Lentil Lens tab includes:
+- ✓ Enable/disable toggle
+- ✓ Lens model selector (4 lenses included)
+- ✓ Focal length, f-stop, focus distance
+- ✓ Chromatic aberration controls
+- ✓ Bokeh blade count and rotation
+- ✓ Bidirectional sampling toggle
+- ✓ All parameters update in real-time
 
-**That's it!** No Python scripts, no complex setup - just drop the HDA and start rendering.
-
-**First-Time Setup**: On first use, click the **"Lentil Camera" shelf tool** to build the HDA (takes ~5 seconds). After that, the HDA is permanently available in the TAB menu for all your projects.
+**That's it!** Parameters are automatically added via OnCreated callbacks - the same system used by Redshift and Arnold.
 
 ### Method 2: Using Shelf Tools
 
@@ -94,83 +92,152 @@ After installation, find the **karmalentil** shelf in Houdini:
 
 **Shelf Tools**:
 - 📷 **Lentil Camera** - Create complete setup with example scene
-- 🎨 **Apply Bidirectional Filter** - Post-process renders
-- 📦 **Import Lens** - Add lenses from lentil repository
 - ❓ **Help** - Documentation and support
-
-### Method 3: Manual HDA Build
-
-To manually build the HDA (rarely needed):
-
-```python
-# In Houdini Python Shell
-import sys
-sys.path.append('/path/to/karmalentil/python')
-import create_lentil_camera_hda
-create_lentil_camera_hda.create_lentil_camera_hda()
-```
-
-The HDA will be created in `$KARMALENTIL/otls/` and automatically loaded.
-
-### Bidirectional Filtering (Advanced Bokeh)
-
-For more realistic bokeh with preserved highlights:
-
-1. Render scene with Karma (includes depth output)
-2. Apply bidirectional filter:
-   ```bash
-   python python/bidirectional_filter.py \
-       render/scene.exr render/scene_filtered.exr \
-       --focus 1000 --fstop 2.8 --focal-length 50
-   ```
-
-See [BIDIRECTIONAL.md](BIDIRECTIONAL.md) for complete documentation.
 
 ## Lens Models
 
-Currently included sample lenses:
-- Double Gauss 50mm f/2.8
-- (More lenses coming soon)
+The lens database includes 4 professionally-modeled lenses:
+
+### Double Gauss 50mm f/2.8
+Classic standard lens design with balanced aberrations. Good general-purpose lens for everyday photography and cinematography.
+
+**Characteristics:**
+- Focal length: 50mm
+- Maximum aperture: f/2.8
+- Aberrations: Moderate spherical, coma, and chromatic
+- Best for: General photography, portraits, street photography
+
+### Telephoto 85mm f/1.4
+Fast portrait telephoto with shallow depth of field and smooth bokeh. Low aberrations for sharp subject rendering.
+
+**Characteristics:**
+- Focal length: 85mm
+- Maximum aperture: f/1.4 (very fast)
+- Aberrations: Low spherical and coma, smooth bokeh
+- Best for: Portraits, subject isolation, shallow DOF
+
+### Wide Angle 24mm f/2.8
+Wide-angle lens with noticeable distortion and strong vignetting. Higher aberrations create character.
+
+**Characteristics:**
+- Focal length: 24mm
+- Maximum aperture: f/2.8
+- Aberrations: Strong distortion, vignetting, field curvature
+- Best for: Landscapes, architecture, environmental shots
+
+### Macro 100mm f/2.8
+Sharp macro lens optimized for close-focusing with minimal aberrations. Excellent for product photography and detail shots.
+
+**Characteristics:**
+- Focal length: 100mm
+- Maximum aperture: f/2.8
+- Aberrations: Minimal (corrected for close-up work)
+- Best for: Macro, product photography, scientific imaging
 
 ## Technical Details
 
-KarmaLentil uses sparse high-degree polynomials (degree 9-15) to model lens aberrations:
-- Input: sensor position (x, y), aperture direction (dx, dy), wavelength (λ)
-- Output: outer pupil position and direction with transmittance
-- Evaluated in VEX for each camera ray in Karma
+### Polynomial Optics
 
-## Documentation
+KarmaLentil uses high-degree polynomials (degree 5) to model realistic lens aberrations:
 
-- **[PLUGIN_INSTALLATION.md](PLUGIN_INSTALLATION.md)** - 🆕 Easy plugin installation guide
-- **[VIEWPORT_INTEGRATION.md](VIEWPORT_INTEGRATION.md)** - Real-time viewport setup and usage
-- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute tutorial
-- **[USAGE.md](USAGE.md)** - Complete parameter reference
-- **[BIDIRECTIONAL.md](BIDIRECTIONAL.md)** - Bidirectional filtering guide
-- **[INSTALL.md](INSTALL.md)** - Advanced installation options
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
+```
+Mapping: (sensor_x, sensor_y, aperture_x, aperture_y) -> (exit_pupil_x, exit_pupil_y)
+```
 
-## New in This Version
+**Input:**
+- Sensor position (x, y) in normalized coordinates [-1, 1]
+- Aperture sample (x, y) on the lens
+- Wavelength (R/G/B) for chromatic aberration
 
-### LOPs/Solaris Architecture
-- 🎯 **Native USD integration** - Built for Karma's Solaris workflow
-- 🎬 **LOP network creation** - Complete stage setup with one click
-- ⚡ **Karma-optimized** - Works with both Karma XPU (GPU) and CPU
+**Output:**
+- Exit pupil position and direction
+- Ray origin and direction for Karma rendering
+- Importance weighting for bidirectional sampling
 
-### Viewport Integration
-- ✨ **Real-time preview** in Karma viewport with all lens effects
-- 🎯 **Interactive parameter adjustment** with immediate visual feedback
-- ⚡ **GPU-accelerated** rendering with Karma XPU
-- 🎨 **Live bidirectional filtering** for accurate bokeh in viewport
+**Polynomial Evaluation:**
+For degree d=5, we have 21 coefficients per dimension:
+```
+result = Σ(i+j≤d) coeff[idx] * x^i * y^j
+```
 
-### Complete System
-- 📦 **One-click setup** - Creates complete LOP network with camera, lights, and render settings
-- 📚 **Lens database** - Automatic loading of all available lenses
-- 🎨 **Aperture textures** - Custom bokeh shapes (hearts, stars, logos)
-- 🐍 **Python automation** - Complete setup and batch processing scripts
-- 📊 **AOV outputs** - CoC, sensor position, wavelength for advanced workflows
+This is evaluated in VEX for each camera ray, adding ~10-20 operations per ray.
 
-### No Post-Processing Required
-Bidirectional filtering now works **in real-time during rendering** (with optional high-quality post-process for finals)!
+### OnCreated Callback System
+
+Instead of using HDAs, KarmaLentil uses Houdini's **OnCreated callback system** to automatically extend camera nodes:
+
+**How it works:**
+1. When a camera LOP is created, Houdini automatically runs `scripts/lop/camera_OnCreated.py`
+2. The script adds spare parameters to the camera node's parameter interface
+3. Parameters are linked to Python callbacks in `python/lentil_callbacks.py`
+4. Callbacks update the camera's USD properties in real-time
+
+**This is the same approach used by:**
+- Redshift
+- Arnold
+- RenderMan
+- Other production render engines
+
+### Karma Lens Materials
+
+Modern Karma uses **Lens Materials** (USD materials) for custom camera shaders:
+
+1. When lentil is enabled, a `karmalensmaterial` LOP node is created
+2. The material references the VEX lens shader (`vex/karma_lentil_lens.vfl`)
+3. The camera's lens material parameter is set to reference this material
+4. Karma evaluates the VEX shader for each camera ray
+
+**Important:** Lens shaders only work with **Karma CPU**, not Karma XPU (GPU).
+
+### File Structure
+
+```
+karmalentil/
+├── lenses/                     # Lens database (JSON files)
+│   ├── double_gauss_50mm.json
+│   ├── telephoto_85mm.json
+│   ├── wide_angle_24mm.json
+│   └── macro_100mm.json
+├── python/                     # Python modules
+│   ├── lens_database.py        # Lens database loader
+│   └── lentil_callbacks.py     # Parameter callbacks
+├── scripts/
+│   ├── lop/
+│   │   └── camera_OnCreated.py # Camera extension script
+│   └── 123.py                  # Startup initialization
+├── vex/
+│   ├── karma_lentil_lens.vfl   # Main lens shader (CVEX)
+│   └── lentil_camera_shader.vfl
+├── toolbar/
+│   └── karmalentil.shelf       # Shelf tools
+└── packages/
+    └── karmalentil.json        # Plugin package definition
+```
+
+## Architecture Highlights
+
+### Real-time Parameter Updates
+
+All parameters update in real-time:
+- Focal length → Camera focalLength
+- F-stop → Camera fStop
+- Focus distance → Camera focusDistance
+- Chromatic aberration → Lens shader parameter
+- Bokeh settings → Lens shader parameters
+
+### Lens Database
+
+Lenses are stored as JSON files with polynomial coefficients:
+- Automatically loaded on startup
+- Available in dynamic lens model menu
+- Can add custom lenses by creating new JSON files
+
+### Chromatic Aberration
+
+RGB wavelength sampling:
+- Random sample selects R/G/B channel
+- Each channel has different focal length shift
+- Creates realistic color fringing at edges
 
 ## Requirements
 

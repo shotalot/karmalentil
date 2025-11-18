@@ -1,0 +1,40 @@
+{
+  "name": "Telephoto 85mm f/1.4",
+  "description": "Fast portrait telephoto lens with shallow depth of field and smooth bokeh",
+  "focal_length": 85.0,
+  "max_fstop": 1.4,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Polynomial coefficients for ray mapping: (sensor_x, sensor_y, aperture_x, aperture_y) -> (exit_x, exit_y)",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.12, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.03, 0.0,
+      0.0, 0.0, 0.015,
+      0.0, 0.0,
+      0.002
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.12, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.03,
+      0.0, 0.0, 0.0,
+      0.0, 0.015,
+      0.002
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.08,
+    "coma": 0.05,
+    "astigmatism": 0.03,
+    "field_curvature": 0.02,
+    "distortion": 0.01,
+    "chromatic_longitudinal": 0.06,
+    "chromatic_lateral": 0.03
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.25
+  }
+}

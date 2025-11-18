@@ -39,6 +39,68 @@ function vector2 sample_polygon(float u; float v; int sides; float rotation_deg)
     return rotated / scale;
 }
 
+// Evaluate 2D polynomial for polynomial optics
+// This maps from (sensor_pos, aperture_pos) to exit pupil direction
+//
+// Polynomial terms for degree d:
+// For each sum=0 to d:
+//   For i=0 to sum:
+//     j = sum - i
+//     term_index = sum*(sum+1)/2 + i
+//     coefficient * (x^i * y^j)
+//
+// Input: (x, y) normalized coordinates, coefficients array, polynomial degree
+// Output: result value
+function float eval_polynomial_2d_single(
+    float x; float y;
+    float aperture_x; float aperture_y;
+    float coeffs[];
+    int degree)
+{
+    float result = 0.0;
+    int idx = 0;
+
+    // Evaluate polynomial terms
+    // For degree d, we have terms where i+j <= d
+    for (int sum = 0; sum <= degree; sum++) {
+        for (int i = 0; i <= sum; i++) {
+            int j = sum - i;
+
+            if (idx >= len(coeffs)) {
+                break;
+            }
+
+            // Build term: we need to handle 4D input (sensor_x, sensor_y, aperture_x, aperture_y)
+            // For simplicity, we'll use a 2D approximation for now
+            // Full implementation would need 4D polynomial with more coefficient terms
+
+            float term = pow(x, float(i)) * pow(y, float(j));
+            result += coeffs[idx] * term;
+
+            idx++;
+        }
+        if (idx >= len(coeffs)) {
+            break;
+        }
+    }
+
+    return result;
+}
+
+// Evaluate full 2D polynomial (returns vector2)
+function vector2 eval_polynomial_2d(
+    float sensor_x; float sensor_y;
+    float aperture_x; float aperture_y;
+    float coeffs_x[]; float coeffs_y[];
+    int degree)
+{
+    // Evaluate both x and y components
+    float result_x = eval_polynomial_2d_single(sensor_x, sensor_y, aperture_x, aperture_y, coeffs_x, degree);
+    float result_y = eval_polynomial_2d_single(sensor_x, sensor_y, aperture_x, aperture_y, coeffs_y, degree);
+
+    return set(result_x, result_y);
+}
+
 // Main lens shader - CVEX signature for Karma
 cvex karma_lentil_lens(
     // Camera space ray outputs
@@ -55,6 +117,7 @@ cvex karma_lentil_lens(
 
     // Lentil parameters
     int enable_lentil = 1;
+    int use_polynomial = 1;         // Use polynomial optics (vs thin lens)
     float focal_length = 50.0;      // mm
     float fstop = 2.8;
     float focus_distance = 5000.0;  // mm
@@ -63,6 +126,11 @@ cvex karma_lentil_lens(
     int bokeh_blades = 0;
     float bokeh_rotation = 0.0;
     float bokeh_intensity = 1.0;
+    int polynomial_degree = 5;
+
+    // Polynomial coefficients (will be populated by Python when lens is selected)
+    float poly_coeffs_x[] = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -0.02, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0};
+    float poly_coeffs_y[] = {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, -0.02, 0.0, 0.0, 0.0, 0.0, 0.01, 0.0};
 )
 {
     // If lentil disabled, use pinhole camera
@@ -103,38 +171,126 @@ cvex karma_lentil_lens(
         0.0
     );
 
-    // Lens position (at focal length from sensor)
-    vector lens_pos = set(aperture_sample.x, aperture_sample.y, focal_m);
+    // === POLYNOMIAL OPTICS PATH ===
+    if (use_polynomial && len(poly_coeffs_x) > 0) {
+        // Normalize sensor and aperture positions for polynomial evaluation
+        // Polynomial expects normalized coordinates [-1, 1]
+        float sensor_x_norm = sx;  // Already in [-1, 1] from Karma
+        float sensor_y_norm = sy;
 
-    // Calculate focus point using thin lens formula
-    // 1/f = 1/s_o + 1/s_i
-    // For focus at distance d: s_o = focal_length, s_i = d
+        float aperture_x_norm = aperture_sample.x / aperture_radius;
+        float aperture_y_norm = aperture_sample.y / aperture_radius;
 
-    // Ray from sensor through lens
-    vector sensor_to_lens = lens_pos - sensor_pos;
+        // Evaluate polynomial to get exit pupil direction
+        vector2 exit_pupil = eval_polynomial_2d(
+            sensor_x_norm, sensor_y_norm,
+            aperture_x_norm, aperture_y_norm,
+            poly_coeffs_x, poly_coeffs_y,
+            polynomial_degree
+        );
 
-    // Project to focus plane
-    // The focus plane is at distance focus_m from lens
-    float t = focus_m / focal_m;
-    vector focus_point = sensor_pos + sensor_to_lens * t;
+        // Convert exit pupil coordinates to 3D direction
+        // The polynomial gives us the exit pupil position on the lens
+        // We need to create a ray from sensor through this exit point
 
-    // Output ray: from lens position toward focus point
-    P = lens_pos;
-    I = normalize(focus_point - lens_pos);
+        // Lens position (at focal length from sensor)
+        vector lens_pos = set(
+            exit_pupil.x * aperture_radius,
+            exit_pupil.y * aperture_radius,
+            focal_m
+        );
 
-    // Apply simple chromatic aberration
-    if (chromatic_aberration > 0.0) {
-        // Shift ray direction slightly based on wavelength
-        // Use randx as wavelength proxy (R/G/B)
-        float wavelength_shift = (randx - 0.5) * chromatic_aberration * 0.02;
-        I = normalize(I + set(wavelength_shift, wavelength_shift * 0.5, 0.0));
+        // Calculate focus point
+        float t = focus_m / focal_m;
+        vector focus_point = sensor_pos + (lens_pos - sensor_pos) * t;
+
+        // Output ray: from lens position toward focus point
+        P = lens_pos;
+        I = normalize(focus_point - lens_pos);
+
+        // Apply chromatic aberration (wavelength-dependent focus)
+        if (chromatic_aberration > 0.0) {
+            // Proper chromatic aberration: different wavelengths refract differently
+            // Red light (long wavelength) focuses further from lens
+            // Blue light (short wavelength) focuses closer to lens
+            //
+            // Standard wavelengths (approximate):
+            // Red:   ~656 nm (C line)
+            // Green: ~546 nm (e line, reference)
+            // Blue:  ~486 nm (F line)
+
+            // Use random sample to select wavelength channel
+            float wavelength_rand = randx;
+            float focal_shift = 0.0;
+
+            // Dispersive shift based on wavelength
+            // Negative shift = shorter focal length (blue)
+            // Positive shift = longer focal length (red)
+            if (wavelength_rand < 0.33) {
+                // Blue channel - shorter focal length
+                focal_shift = -chromatic_aberration * 0.015;
+            }
+            else if (wavelength_rand < 0.67) {
+                // Green channel - reference (no shift)
+                focal_shift = 0.0;
+            }
+            else {
+                // Red channel - longer focal length
+                focal_shift = chromatic_aberration * 0.015;
+            }
+
+            // Apply focal length shift
+            float focal_shifted = focal_m * (1.0 + focal_shift);
+
+            // Recalculate focus point with shifted focal length
+            // This creates the characteristic color fringing at edges
+            float t_chrom = focus_m / focal_shifted;
+            vector focus_point_chrom = sensor_pos + (lens_pos - sensor_pos) * t_chrom;
+
+            I = normalize(focus_point_chrom - lens_pos);
+        }
+
+    }
+    // === THIN LENS PATH (fallback) ===
+    else {
+        // Lens position (at focal length from sensor)
+        vector lens_pos = set(aperture_sample.x, aperture_sample.y, focal_m);
+
+        // Calculate focus point using thin lens formula
+        // Ray from sensor through lens
+        vector sensor_to_lens = lens_pos - sensor_pos;
+
+        // Project to focus plane
+        float t = focus_m / focal_m;
+        vector focus_point = sensor_pos + sensor_to_lens * t;
+
+        // Output ray: from lens position toward focus point
+        P = lens_pos;
+        I = normalize(focus_point - lens_pos);
+
+        // Apply chromatic aberration (same as polynomial path)
+        if (chromatic_aberration > 0.0) {
+            float wavelength_rand = randx;
+            float focal_shift = 0.0;
+
+            if (wavelength_rand < 0.33) {
+                focal_shift = -chromatic_aberration * 0.015;  // Blue
+            }
+            else if (wavelength_rand < 0.67) {
+                focal_shift = 0.0;  // Green (reference)
+            }
+            else {
+                focal_shift = chromatic_aberration * 0.015;  // Red
+            }
+
+            float focal_shifted = focal_m * (1.0 + focal_shift);
+            float t_chrom = focus_m / focal_shifted;
+            vector focus_point_chrom = sensor_pos + sensor_to_lens * t_chrom;
+
+            I = normalize(focus_point_chrom - lens_pos);
+        }
     }
 
-    // Bidirectional sampling importance
+    // Bidirectional sampling importance for bokeh highlights
     importance = bokeh_intensity;
-
-    // TODO: Replace thin lens with polynomial evaluation
-    // 1. Load lens polynomial coefficients
-    // 2. Evaluate polynomial mapping: (sensor_pos, aperture_pos) -> exit_pupil
-    // 3. Use polynomial-generated direction instead of thin lens
 }

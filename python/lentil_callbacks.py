@@ -10,17 +10,16 @@ import hou
 
 def assign_lens_material(camera_node, focal_length, fstop, focus_distance, sensor_width):
     """
-    Assign Karma lens material to camera
+    Assign Karma lens material to camera with polynomial lens data
 
     Karma uses "lens materials" (USD materials) instead of direct shader paths.
-    This creates/assigns a Karma Lens Material LOP node.
+    This creates/assigns a Karma Lens Material LOP node and sets shader parameters.
     """
     try:
         # Get the LOP network containing the camera
         lop_network = camera_node.parent()
 
         # Look for lens material parameter on camera
-        # Common parameter names: lensmaterial, karmamaterial, lensshader:surface
         lens_material_parm = None
         for parm_name in ['lensmaterial', 'karmamaterial', 'lensshader:surface', 'lens:shader']:
             if camera_node.parm(parm_name):
@@ -45,6 +44,39 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
         # Set lens material path on camera
         material_path = '/LensMaterials/lentil_lens_material'
         lens_material_parm.set(material_path)
+
+        # Set VEX shader path
+        # Point to our karma_lentil_lens.vfl shader
+        karmalentil_path = hou.getenv('KARMALENTIL')
+        if karmalentil_path:
+            shader_path = f"{karmalentil_path}/vex/karma_lentil_lens.vfl"
+
+            # Try to set shader path on lens material node
+            if lens_mat_node.parm('lenssurfaceshader'):
+                lens_mat_node.parm('lenssurfaceshader').set(shader_path)
+                print(f"  Set lens shader: {shader_path}")
+
+        # Load lens database and get polynomial coefficients
+        from lens_database import get_lens_database
+        db = get_lens_database()
+
+        # Get selected lens model from camera
+        lens_model = camera_node.evalParm('lens_model') if camera_node.parm('lens_model') else 'double_gauss_50mm'
+
+        # Get polynomial coefficients from database
+        lens_data = db.get_lens(lens_model)
+        if lens_data:
+            coeffs = lens_data.get('coefficients', {})
+            poly_degree = lens_data.get('polynomial_degree', 5)
+
+            # TODO: Set polynomial coefficients on lens material node
+            # This requires the Karma Lens Material to have parameters for the coefficients
+            # For now, the shader has default coefficients
+
+            print(f"  Loaded lens data: {lens_data.get('name', lens_model)}")
+            print(f"  Polynomial degree: {poly_degree}")
+        else:
+            print(f"  WARNING: Lens '{lens_model}' not found in database")
 
         print(f"  Assigned lens material: {material_path}")
         print(f"  NOTE: Lens materials only work with Karma CPU, not Karma XPU!")

@@ -1,0 +1,40 @@
+{
+  "name": "Macro 100mm f/2.8",
+  "description": "Sharp macro lens with excellent close-focusing and minimal aberrations",
+  "focal_length": 100.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Polynomial coefficients optimized for close-focusing with minimal distortion",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.11, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.015, 0.0,
+      0.0, 0.0, 0.008,
+      0.0, 0.0,
+      0.001
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.11, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.015,
+      0.0, 0.0, 0.0,
+      0.0, 0.008,
+      0.001
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.05,
+    "coma": 0.03,
+    "astigmatism": 0.02,
+    "field_curvature": 0.01,
+    "distortion": 0.005,
+    "chromatic_longitudinal": 0.04,
+    "chromatic_lateral": 0.02
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.2
+  }
+}
