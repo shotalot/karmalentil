@@ -256,7 +256,6 @@ if node and not is_deferred:
                 print(f"KarmaLentil: Warning - {e}")
 
     # Schedule for later execution
-    import hou.ui
     if hasattr(hou.ui, 'addEventLoopCallback'):
         # Add callback that runs once then removes itself
         def run_once():
