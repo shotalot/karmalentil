@@ -1,0 +1,46 @@
+{
+  "name": "Petzval Portrait Lens (1900)",
+  "description": "Early portrait lens with distinctive swirly bokeh and field curvature",
+  "focal_length": 150.0,
+  "max_fstop": 3.5,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Turn-of-century Petzval design with strong field curvature",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.13, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.08, 0.0,
+      0.0, 0.0, 0.045,
+      0.0, 0.0,
+      -0.015
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.13, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.08,
+      0.0, 0.0, 0.0,
+      0.0, 0.045,
+      -0.015
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.32,
+    "coma": 0.28,
+    "astigmatism": 0.22,
+    "field_curvature": 0.55,
+    "distortion": 0.08,
+    "chromatic_longitudinal": 0.25,
+    "chromatic_lateral": 0.18
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.68
+  },
+  "historical_info": {
+    "year": 1900,
+    "manufacturer": "Unknown",
+    "design_type": "Petzval",
+    "original_format": "Large Format Portrait"
+  }
+}

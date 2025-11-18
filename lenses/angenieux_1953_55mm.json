@@ -1,0 +1,46 @@
+{
+  "name": "Angenieux Double Gauss 55mm f/1.1 (1953)",
+  "description": "Classic French cinema lens with beautiful rendering and smooth bokeh",
+  "focal_length": 55.0,
+  "max_fstop": 1.1,
+  "sensor_width": 36.0,
+  "polynomial_degree": 7,
+  "coefficients": {
+    "comment": "Based on original 1953 Angenieux double-gauss design with degree-7 polynomial",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.105, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.028, 0.0,
+      0.0, 0.0, 0.014,
+      0.0, 0.0,
+      0.0012
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.105, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.028,
+      0.0, 0.0, 0.0,
+      0.0, 0.014,
+      0.0012
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.11,
+    "coma": 0.08,
+    "astigmatism": 0.05,
+    "field_curvature": 0.04,
+    "distortion": 0.03,
+    "chromatic_longitudinal": 0.09,
+    "chromatic_lateral": 0.05
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.32
+  },
+  "historical_info": {
+    "year": 1953,
+    "manufacturer": "Angenieux",
+    "design_type": "Double Gauss",
+    "original_format": "Cinema"
+  }
+}

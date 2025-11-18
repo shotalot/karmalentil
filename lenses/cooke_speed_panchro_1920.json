@@ -1,0 +1,46 @@
+{
+  "name": "Cooke Speed Panchro (1920)",
+  "description": "Legendary cinema lens with the famous 'Cooke Look' - gentle rendering and skin-friendly tonality",
+  "focal_length": 50.0,
+  "max_fstop": 2.0,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Classic Cooke Speed Panchro with gentle aberrations for pleasing rendering",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.10, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.035, 0.0,
+      0.0, 0.0, 0.018,
+      0.0, 0.0,
+      -0.004
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.10, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.035,
+      0.0, 0.0, 0.0,
+      0.0, 0.018,
+      -0.004
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.19,
+    "coma": 0.14,
+    "astigmatism": 0.10,
+    "field_curvature": 0.12,
+    "distortion": 0.05,
+    "chromatic_longitudinal": 0.14,
+    "chromatic_lateral": 0.09
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.42
+  },
+  "historical_info": {
+    "year": 1920,
+    "manufacturer": "Cooke Optics",
+    "design_type": "Speed Panchro",
+    "original_format": "Cinema"
+  }
+}

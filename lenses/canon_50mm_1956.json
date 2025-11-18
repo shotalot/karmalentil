@@ -1,0 +1,46 @@
+{
+  "name": "Canon 50mm f/1.8 (1956)",
+  "description": "Early Japanese standard lens with clean rendering",
+  "focal_length": 50.0,
+  "max_fstop": 1.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "1950s Canon standard lens design",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.10, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.038, 0.0,
+      0.0, 0.0, 0.019,
+      0.0, 0.0,
+      -0.003
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.10, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.038,
+      0.0, 0.0, 0.0,
+      0.0, 0.019,
+      -0.003
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.15,
+    "coma": 0.11,
+    "astigmatism": 0.08,
+    "field_curvature": 0.07,
+    "distortion": 0.04,
+    "chromatic_longitudinal": 0.11,
+    "chromatic_lateral": 0.07
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.38
+  },
+  "historical_info": {
+    "year": 1956,
+    "manufacturer": "Canon",
+    "design_type": "Standard Prime",
+    "original_format": "35mm Rangefinder"
+  }
+}

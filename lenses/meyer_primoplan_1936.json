@@ -1,0 +1,46 @@
+{
+  "name": "Meyer-Optik Primoplan 58mm f/1.9 (1936)",
+  "description": "Classic German lens with dreamy bokeh and soap bubble effect",
+  "focal_length": 58.0,
+  "max_fstop": 1.9,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Primoplan with characteristic bubble bokeh from spherical aberration",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.11, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.052, 0.0,
+      0.0, 0.0, 0.032,
+      0.0, 0.0,
+      -0.009
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.11, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.052,
+      0.0, 0.0, 0.0,
+      0.0, 0.032,
+      -0.009
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.38,
+    "coma": 0.18,
+    "astigmatism": 0.14,
+    "field_curvature": 0.28,
+    "distortion": 0.05,
+    "chromatic_longitudinal": 0.16,
+    "chromatic_lateral": 0.11
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.48
+  },
+  "historical_info": {
+    "year": 1936,
+    "manufacturer": "Meyer-Optik Görlitz",
+    "design_type": "Primoplan",
+    "original_format": "Medium Format"
+  }
+}

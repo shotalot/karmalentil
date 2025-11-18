@@ -1,0 +1,46 @@
+{
+  "name": "Nikon Retrofocus 28mm f/3.5 (1971)",
+  "description": "Wide-angle retrofocus design with excellent correction for landscapes",
+  "focal_length": 28.0,
+  "max_fstop": 3.5,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Early 70s Nikon retrofocus wide-angle",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.088, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.048, 0.0,
+      0.0, 0.0, 0.024,
+      0.0, 0.0,
+      -0.005
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.088, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.048,
+      0.0, 0.0, 0.0,
+      0.0, 0.024,
+      -0.005
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.14,
+    "coma": 0.11,
+    "astigmatism": 0.08,
+    "field_curvature": 0.07,
+    "distortion": 0.12,
+    "chromatic_longitudinal": 0.12,
+    "chromatic_lateral": 0.09
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.42
+  },
+  "historical_info": {
+    "year": 1971,
+    "manufacturer": "Nikon",
+    "design_type": "Retrofocus Wide-Angle",
+    "original_format": "35mm SLR"
+  }
+}

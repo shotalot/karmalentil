@@ -1,0 +1,46 @@
+{
+  "name": "Zeiss Flektagon 35mm f/2.8 (1954)",
+  "description": "Advanced retrofocus wide-angle with excellent correction for the era",
+  "focal_length": 35.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Flektagon retrofocus design with good correction",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.092, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.042, 0.0,
+      0.0, 0.0, 0.021,
+      0.0, 0.0,
+      -0.004
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.092, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.042,
+      0.0, 0.0, 0.0,
+      0.0, 0.021,
+      -0.004
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.12,
+    "coma": 0.09,
+    "astigmatism": 0.07,
+    "field_curvature": 0.06,
+    "distortion": 0.10,
+    "chromatic_longitudinal": 0.10,
+    "chromatic_lateral": 0.07
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.36
+  },
+  "historical_info": {
+    "year": 1954,
+    "manufacturer": "Carl Zeiss",
+    "design_type": "Flektagon Retrofocus",
+    "original_format": "35mm SLR"
+  }
+}

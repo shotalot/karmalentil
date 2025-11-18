@@ -1,0 +1,46 @@
+{
+  "name": "Fisheye 16mm (1954)",
+  "description": "Early fisheye lens with extreme distortion and 180-degree field of view",
+  "focal_length": 16.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "1950s fisheye with extreme equidistant projection",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.055, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.14, 0.0,
+      0.0, 0.0, 0.075,
+      0.0, 0.0,
+      -0.032
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.055, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.14,
+      0.0, 0.0, 0.0,
+      0.0, 0.075,
+      -0.032
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.18,
+    "coma": 0.15,
+    "astigmatism": 0.11,
+    "field_curvature": 0.20,
+    "distortion": 0.98,
+    "chromatic_longitudinal": 0.20,
+    "chromatic_lateral": 0.16
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.85
+  },
+  "historical_info": {
+    "year": 1954,
+    "manufacturer": "Unknown",
+    "design_type": "Diagonal Fisheye",
+    "original_format": "35mm Film"
+  }
+}

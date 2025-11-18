@@ -1,0 +1,46 @@
+{
+  "name": "Cooke Anamorphic (1954)",
+  "description": "Early anamorphic cinema lens with 2x squeeze for CinemaScope widescreen",
+  "focal_length": 50.0,
+  "max_fstop": 2.3,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "1950s anamorphic with asymmetric aberrations and characteristic oval bokeh",
+    "exit_pupil_x": [
+      2.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.095, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.048, 0.0,
+      0.0, 0.0, 0.026,
+      0.0, 0.0,
+      -0.008
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.048, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.024,
+      0.0, 0.0, 0.0,
+      0.0, 0.013,
+      -0.004
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.16,
+    "coma": 0.22,
+    "astigmatism": 0.35,
+    "field_curvature": 0.10,
+    "distortion": 0.15,
+    "chromatic_longitudinal": 0.12,
+    "chromatic_lateral": 0.18
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.45
+  },
+  "historical_info": {
+    "year": 1954,
+    "manufacturer": "Cooke Optics",
+    "design_type": "Anamorphic 2x",
+    "original_format": "CinemaScope"
+  }
+}

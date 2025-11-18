@@ -1,0 +1,46 @@
+{
+  "name": "Canon FD 24mm f/2.8 (1982)",
+  "description": "Late FD-mount wide-angle with excellent sharpness across the frame",
+  "focal_length": 24.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Early 80s Canon with advanced optical design",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.086, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.044, 0.0,
+      0.0, 0.0, 0.022,
+      0.0, 0.0,
+      -0.004
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.086, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.044,
+      0.0, 0.0, 0.0,
+      0.0, 0.022,
+      -0.004
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.09,
+    "coma": 0.07,
+    "astigmatism": 0.05,
+    "field_curvature": 0.04,
+    "distortion": 0.09,
+    "chromatic_longitudinal": 0.08,
+    "chromatic_lateral": 0.06
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.34
+  },
+  "historical_info": {
+    "year": 1982,
+    "manufacturer": "Canon",
+    "design_type": "FD Retrofocus",
+    "original_format": "35mm SLR"
+  }
+}

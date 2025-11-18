@@ -1,0 +1,46 @@
+{
+  "name": "Zeiss Biotar 58mm f/2.0 (1927)",
+  "description": "German portrait lens with characteristic swirly bokeh, predecessor to Helios",
+  "focal_length": 58.0,
+  "max_fstop": 2.0,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Biotar design with field curvature creating swirly bokeh effect",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.11, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.065, 0.0,
+      0.0, 0.0, 0.038,
+      0.0, 0.0,
+      -0.010
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.11, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.065,
+      0.0, 0.0, 0.0,
+      0.0, 0.038,
+      -0.010
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.22,
+    "coma": 0.20,
+    "astigmatism": 0.16,
+    "field_curvature": 0.38,
+    "distortion": 0.06,
+    "chromatic_longitudinal": 0.17,
+    "chromatic_lateral": 0.13
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.50
+  },
+  "historical_info": {
+    "year": 1927,
+    "manufacturer": "Carl Zeiss",
+    "design_type": "Biotar",
+    "original_format": "35mm Film"
+  }
+}

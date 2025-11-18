@@ -1,0 +1,46 @@
+{
+  "name": "SMC Takumar 35mm f/2.0 (1974)",
+  "description": "Super-Multi-Coated Takumar wide-angle with improved flare resistance",
+  "focal_length": 35.0,
+  "max_fstop": 2.0,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Mid-70s SMC Takumar with advanced multi-coating",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.093, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.036, 0.0,
+      0.0, 0.0, 0.018,
+      0.0, 0.0,
+      -0.003
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.093, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.036,
+      0.0, 0.0, 0.0,
+      0.0, 0.018,
+      -0.003
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.10,
+    "coma": 0.07,
+    "astigmatism": 0.05,
+    "field_curvature": 0.04,
+    "distortion": 0.07,
+    "chromatic_longitudinal": 0.08,
+    "chromatic_lateral": 0.05
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.31
+  },
+  "historical_info": {
+    "year": 1974,
+    "manufacturer": "Asahi Pentax",
+    "design_type": "SMC Takumar",
+    "original_format": "35mm SLR"
+  }
+}

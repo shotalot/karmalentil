@@ -1,0 +1,46 @@
+{
+  "name": "Minolta MD Fisheye 16mm f/2.8 (1978)",
+  "description": "Full-frame fisheye with circular image projection",
+  "focal_length": 16.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Late 70s fisheye with excellent build and sharpness",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.058, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.13, 0.0,
+      0.0, 0.0, 0.068,
+      0.0, 0.0,
+      -0.028
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.058, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.13,
+      0.0, 0.0, 0.0,
+      0.0, 0.068,
+      -0.028
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.16,
+    "coma": 0.13,
+    "astigmatism": 0.10,
+    "field_curvature": 0.18,
+    "distortion": 0.92,
+    "chromatic_longitudinal": 0.17,
+    "chromatic_lateral": 0.14
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.78
+  },
+  "historical_info": {
+    "year": 1978,
+    "manufacturer": "Minolta",
+    "design_type": "Full-Frame Fisheye",
+    "original_format": "35mm SLR"
+  }
+}

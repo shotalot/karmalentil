@@ -1,0 +1,46 @@
+{
+  "name": "Kodak Petzval 102mm f/2.7 (1948)",
+  "description": "Post-war American Petzval design for portrait photography",
+  "focal_length": 102.0,
+  "max_fstop": 2.7,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Mid-century Petzval with improved correction over earlier designs",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.12, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.055, 0.0,
+      0.0, 0.0, 0.030,
+      0.0, 0.0,
+      -0.008
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.12, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.055,
+      0.0, 0.0, 0.0,
+      0.0, 0.030,
+      -0.008
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.24,
+    "coma": 0.20,
+    "astigmatism": 0.16,
+    "field_curvature": 0.42,
+    "distortion": 0.06,
+    "chromatic_longitudinal": 0.18,
+    "chromatic_lateral": 0.13
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.55
+  },
+  "historical_info": {
+    "year": 1948,
+    "manufacturer": "Kodak",
+    "design_type": "Petzval",
+    "original_format": "Large Format"
+  }
+}

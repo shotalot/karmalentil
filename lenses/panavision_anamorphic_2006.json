@@ -1,0 +1,46 @@
+{
+  "name": "Panavision Primo Anamorphic 50mm (2006)",
+  "description": "Modern cinema anamorphic with 2x squeeze, used in Hollywood blockbusters",
+  "focal_length": 50.0,
+  "max_fstop": 1.9,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Modern Panavision anamorphic with controlled aberrations for cinematic look",
+    "exit_pupil_x": [
+      2.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.098, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.038, 0.0,
+      0.0, 0.0, 0.019,
+      0.0, 0.0,
+      -0.004
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.049, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.019,
+      0.0, 0.0, 0.0,
+      0.0, 0.0095,
+      -0.002
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.08,
+    "coma": 0.12,
+    "astigmatism": 0.24,
+    "field_curvature": 0.05,
+    "distortion": 0.08,
+    "chromatic_longitudinal": 0.06,
+    "chromatic_lateral": 0.10
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.28
+  },
+  "historical_info": {
+    "year": 2006,
+    "manufacturer": "Panavision",
+    "design_type": "Primo Anamorphic 2x",
+    "original_format": "Cinema (Digital/Film)"
+  }
+}

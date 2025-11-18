@@ -1,0 +1,46 @@
+{
+  "name": "Super Takumar 50mm f/1.4 (1970)",
+  "description": "Fast standard prime with creamy bokeh and sharp center",
+  "focal_length": 50.0,
+  "max_fstop": 1.4,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Early 70s fast Takumar with excellent optical design",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.10, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.028, 0.0,
+      0.0, 0.0, 0.014,
+      0.0, 0.0,
+      0.001
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.10, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.028,
+      0.0, 0.0, 0.0,
+      0.0, 0.014,
+      0.001
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.11,
+    "coma": 0.08,
+    "astigmatism": 0.05,
+    "field_curvature": 0.04,
+    "distortion": 0.02,
+    "chromatic_longitudinal": 0.09,
+    "chromatic_lateral": 0.05
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.32
+  },
+  "historical_info": {
+    "year": 1970,
+    "manufacturer": "Asahi Pentax",
+    "design_type": "Super Takumar",
+    "original_format": "35mm SLR"
+  }
+}
