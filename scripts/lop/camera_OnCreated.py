@@ -232,15 +232,21 @@ def add_lentil_spare_parameters(node):
     print(f"KarmaLentil: Successfully added Lentil Lens tab to camera")
 
 
-# This is the main entry point - called automatically when camera node is created
-kwargs = globals().get('kwargs', {})
-node = kwargs.get('node')
+# DISABLED: OnCreated callback has been disabled to preserve Karma tab
+# Use the "Add Lentil to Camera" shelf tool instead
 
-if node:
-    try:
-        add_lentil_spare_parameters(node)
-    except Exception as e:
-        # Don't break camera creation if something goes wrong
-        print(f"KarmaLentil: Warning - Could not add spare parameters: {e}")
-        import traceback
-        traceback.print_exc()
+# This is the main entry point - called automatically when camera node is created
+# kwargs = globals().get('kwargs', {})
+# node = kwargs.get('node')
+#
+# if node:
+#     try:
+#         add_lentil_spare_parameters(node)
+#     except Exception as e:
+#         # Don't break camera creation if something goes wrong
+#         print(f"KarmaLentil: Warning - Could not add spare parameters: {e}")
+#         import traceback
+#         traceback.print_exc()
+
+# The add_lentil_spare_parameters function is still available for the shelf tool to use
+# Just import this file and call the function manually

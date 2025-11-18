@@ -3,6 +3,7 @@
   <!-- KarmaLentil Shelf -->
   <toolshelf name="karmalentil" label="KarmaLentil">
     <memberTool name="lentil_camera"/>
+    <memberTool name="add_lentil_to_camera"/>
     <memberTool name="lentil_filter"/>
     <memberTool name="lentil_import_lens"/>
     <memberTool name="lentil_help"/>
@@ -177,6 +178,103 @@ except Exception as e:
     )
     import traceback
     traceback.print_exc()
+]]></script>
+  </tool>
+
+  <!-- Add Lentil to Camera Tool (Manual) -->
+  <tool name="add_lentil_to_camera" label="Add Lentil to Camera" icon="NETWORKS_camera">
+    <script scriptType="python"><![CDATA[
+import hou
+import sys
+import os
+
+# Add karmalentil python to path
+karmalentil_path = hou.getenv("KARMALENTIL")
+if karmalentil_path:
+    python_path = os.path.join(karmalentil_path, "python")
+    if python_path not in sys.path:
+        sys.path.insert(0, python_path)
+
+# Get selected nodes
+selected = hou.selectedNodes()
+
+if not selected:
+    hou.ui.displayMessage(
+        "No camera selected.\n\n"
+        "Please select a Camera LOP node and try again.",
+        severity=hou.severityType.Warning,
+        title="KarmaLentil - Add Lentil to Camera"
+    )
+else:
+    # Filter to only camera nodes
+    cameras = [n for n in selected if n.type().name() == 'camera']
+
+    if not cameras:
+        hou.ui.displayMessage(
+            "No camera nodes selected.\n\n"
+            "Selected nodes:\n" + "\n".join([f"  - {n.name()} ({n.type().name()})" for n in selected]) + "\n\n"
+            "Please select a Camera LOP node.",
+            severity=hou.severityType.Warning,
+            title="KarmaLentil - Add Lentil to Camera"
+        )
+    else:
+        # Import the OnCreated script to get the add_lentil_spare_parameters function
+        oncreated_path = os.path.join(karmalentil_path, 'scripts', 'lop', 'camera_OnCreated.py')
+
+        # Execute the file to get the function
+        with open(oncreated_path, 'r') as f:
+            exec(f.read(), globals())
+
+        # Add lentil parameters to each camera
+        success_count = 0
+        already_has_count = 0
+        error_count = 0
+
+        for camera in cameras:
+            try:
+                # Check if already has lentil
+                if camera.parm('enable_lentil'):
+                    already_has_count += 1
+                    continue
+
+                # Add the parameters
+                add_lentil_spare_parameters(camera)
+                success_count += 1
+
+            except Exception as e:
+                error_count += 1
+                print(f"KarmaLentil: Error adding to {camera.path()}: {e}")
+
+        # Build status message
+        msg_parts = []
+
+        if success_count > 0:
+            msg_parts.append(f"✓ Added lentil to {success_count} camera(s)")
+
+        if already_has_count > 0:
+            msg_parts.append(f"ℹ {already_has_count} camera(s) already have lentil")
+
+        if error_count > 0:
+            msg_parts.append(f"✗ {error_count} camera(s) failed (see console)")
+
+        status_msg = "\n".join(msg_parts)
+
+        if success_count > 0:
+            status_msg += "\n\nThe 'Lentil Lens' tab has been added!\n\n"
+            status_msg += "NEXT STEPS:\n"
+            status_msg += "1. Select the camera node\n"
+            status_msg += "2. Open the 'Lentil Lens' tab\n"
+            status_msg += "3. Enable 'Enable Lentil' toggle\n"
+            status_msg += "4. Choose a lens from 40 models\n"
+            status_msg += "5. Adjust parameters and render!"
+
+        severity = hou.severityType.Message if success_count > 0 else hou.severityType.Warning
+
+        hou.ui.displayMessage(
+            status_msg,
+            severity=severity,
+            title="KarmaLentil - Add Lentil to Camera"
+        )
 ]]></script>
   </tool>
 
