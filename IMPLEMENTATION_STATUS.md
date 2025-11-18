@@ -98,13 +98,20 @@ README.md (updated documentation)
 5. **VEX shader** evaluates polynomials per ray
 6. **Karma CPU** renders with lens aberrations
 
-## ⚠️ Known Issues
+## ⚠️ Known Issues & Solutions
 
-### Karma Tab Visibility
-- Issue: Karma tab may disappear when lentil parameters are added
-- Current approach: Append lentil folder at end (safest method)
-- Debug script provided: `debug_camera_params.py`
-- Needs user testing to verify fix
+### Karma Tab Visibility - ✅ SOLVED
+- **Issue:** Karma tab disappeared when lentil parameters were added
+- **Root cause:** Having `camera_OnCreated.py` in `scripts/lop/` blocked Karma's OnCreated
+- **Solution:** Moved to `python/lentil_camera_setup.py`, now called via manual shelf button
+- **Result:** Both Karma and Lentil tabs coexist successfully
+
+### Lens Shader Assignment in Karma Tab - ✅ IMPLEMENTED
+- **Feature:** Lens shader is assigned through Karma tab's lens material parameter
+- **Implementation:** Robust parameter detection handles multiple Houdini versions
+- **Parameter names tried:** `karma:lens:surface`, `ri:lens:surface`, `lensMaterial`, etc.
+- **Debug output:** Shows available parameters if none found, aids troubleshooting
+- **Status:** Ready for user testing
 
 ### Karma XPU Limitation
 - Custom lens shaders only work with **Karma CPU**
@@ -133,18 +140,34 @@ README.md (updated documentation)
 
 ## 📝 Testing Checklist
 
-- [ ] Restart Houdini to reload OnCreated script
+### Basic Setup:
+- [ ] Restart Houdini to reload scripts
 - [ ] Create new Camera LOP node
+- [ ] Use "Add Lentil to Camera" shelf button
 - [ ] Verify "Lentil Lens" tab appears
-- [ ] Check Karma tab still visible
+- [ ] Check Karma tab still visible (should be!)
+
+### Parameter Testing:
 - [ ] Enable lentil toggle
-- [ ] Select different lens models
+- [ ] Check Python console for lens material parameter detection
+- [ ] Verify Karma Lens Material LOP node is created
+- [ ] Select different lens models from 40 options
 - [ ] Adjust focal length, f-stop, focus distance
-- [ ] Render with Karma CPU (not XPU)
+- [ ] Check camera parameters update in real-time
+
+### Rendering Tests:
+- [ ] Set Karma renderer to **CPU** mode (not XPU)
+- [ ] Render test scene
 - [ ] Verify depth of field works
-- [ ] Test chromatic aberration
+- [ ] Test chromatic aberration (RGB color fringing)
 - [ ] Test bokeh blades/rotation
-- [ ] Run debug script if issues occur
+- [ ] Compare different lens models (historical vs modern)
+
+### Troubleshooting:
+- [ ] Run `debug_camera_params.py` if issues occur
+- [ ] Check Python console output for parameter detection messages
+- [ ] Verify $KARMALENTIL environment variable is set
+- [ ] Ensure VEX shader path is correct in Karma Lens Material node
 
 ## 🎬 Production Ready
 

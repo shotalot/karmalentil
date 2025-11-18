@@ -13,7 +13,7 @@ Port of [lentil](https://github.com/zpelgrims/lentil) from Arnold to Houdini Kar
 - 🔬 Physically-based lens aberration modeling using polynomial optics
 - 🌈 RGB chromatic aberration with wavelength-dependent rendering
 - ✨ **Bidirectional sampling** for realistic bokeh with preserved highlights
-- 📚 **Lens database system** with 4 included lens models
+- 📚 **Lens database system** with 40 professional lens models (1900-2025)
 - 💫 Customizable aperture shapes (circular and polygonal bokeh)
 - ⚡ Karma CPU lens shader support via CVEX
 - 🚀 VEX-based polynomial evaluation for performance
@@ -182,12 +182,24 @@ Instead of using HDAs, KarmaLentil uses Houdini's **OnCreated callback system** 
 
 Modern Karma uses **Lens Materials** (USD materials) for custom camera shaders:
 
-1. When lentil is enabled, a `karmalensmaterial` LOP node is created
+1. When lentil is enabled, a `karmalensmaterial` LOP node is automatically created
 2. The material references the VEX lens shader (`vex/karma_lentil_lens.vfl`)
-3. The camera's lens material parameter is set to reference this material
+3. The camera's **Karma tab** lens material parameter is automatically set to reference this material
 4. Karma evaluates the VEX shader for each camera ray
 
+**How It Works:**
+- The lens material parameter is located in the **Karma tab** of the Camera LOP node
+- KarmaLentil automatically detects the correct parameter name (handles multiple Houdini versions)
+- Common parameter names: `karma:lens:surface`, `ri:lens:surface`, `lensMaterial`
+- If the parameter isn't found, debug output will show available parameters
+
 **Important:** Lens shaders only work with **Karma CPU**, not Karma XPU (GPU).
+
+**Debugging:**
+If lens shader assignment isn't working, check the Python console output when enabling lentil. It will show:
+- Which lens material parameter was found (or list available parameters if not found)
+- Whether the Karma Lens Material node was created successfully
+- The VEX shader path being assigned
 
 ### File Structure
 
