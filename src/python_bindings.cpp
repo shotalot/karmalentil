@@ -33,8 +33,9 @@ public:
     std::vector<lens_element_t> elements;
     int num_elements;
     std::string lens_id;
+    double total_lens_length;
 
-    LensSystemWrapper() : num_elements(0) {}
+    LensSystemWrapper() : num_elements(0), total_lens_length(0.0) {}
 
     /**
      * Load lens from polynomial-optics database
@@ -45,6 +46,13 @@ public:
 
         if (num_elements <= 0) {
             return false;
+        }
+
+        // Calculate total lens length
+        total_lens_length = 0.0;
+        double zoom = 0.5;  // Mid zoom
+        for (int i = 0; i < num_elements; i++) {
+            total_lens_length += lens_get_thickness(elements[i], zoom);
         }
 
         return true;
@@ -69,6 +77,8 @@ public:
 
             double aperture_pos = lens_get_aperture_pos(elements, num_elements, 0.5);
             info["aperture_position"] = aperture_pos;
+
+            info["lens_length"] = total_lens_length;
         }
 
         return info;
@@ -97,126 +107,85 @@ public:
 /**
  * C++ Raytracer Wrapper
  *
- * High-performance raytracing using polynomial-optics
+ * High-performance raytracing using polynomial-optics evaluate() function
  */
 class CppRaytracer {
 public:
     LensSystemWrapper* lens_system;
+    double zoom;
 
-    CppRaytracer(LensSystemWrapper* ls) : lens_system(ls) {}
+    CppRaytracer(LensSystemWrapper* ls, double z = 0.5)
+        : lens_system(ls), zoom(z) {}
 
     /**
      * Trace a single ray through the lens system
      *
+     * Uses polynomial-optics evaluate() function which traces from sensor to scene
+     * Input: sensor position [x, y, 0], direction [dx, dy, 1.0] (normalized later)
+     *
      * Returns: (success, exit_pos, exit_dir)
      */
     std::tuple<bool, Eigen::Vector3d, Eigen::Vector3d> trace_ray(
-        const Eigen::Vector3d& origin,
-        const Eigen::Vector3d& direction,
+        const Eigen::Vector3d& sensor_pos,
+        const Eigen::Vector3d& sensor_dir,
         double wavelength = 550.0) {
 
-        Eigen::Vector3d pos = origin;
-        Eigen::Vector3d dir = direction;
-        dir.normalize();
+        // polynomial-optics uses wavelength in micrometers
+        double lambda = wavelength / 1000.0;
 
-        double lambda = wavelength / 1000.0;  // Convert nm to micrometers
-        double zoom = 0.5;  // Mid zoom position
+        // Create input vector [x, y, dx, dy, lambda]
+        Eigen::VectorXd in(5);
+        in(0) = sensor_pos(0);
+        in(1) = sensor_pos(1);
 
-        // Trace through each lens element
-        for (int i = 0; i < lens_system->num_elements; i++) {
-            const lens_element_t& elem = lens_system->elements[i];
+        // Normalize direction and extract x,y components
+        Eigen::Vector3d dir_normalized = sensor_dir.normalized();
+        in(2) = dir_normalized(0);
+        in(3) = dir_normalized(1);
+        in(4) = lambda;
 
-            // Skip aperture (iris)
-            if (stringcmp(elem.material, "iris")) {
-                // Just propagate through aperture
-                double thickness = lens_get_thickness(elem, zoom);
-                for (int k = 0; k < 3; k++) {
-                    pos(k) += dir(k) * thickness;
-                }
+        // Output vector
+        Eigen::VectorXd out(5);
+        out.setZero();
 
-                // Check if vignetted
-                double r2 = pos(0)*pos(0) + pos(1)*pos(1);
-                if (r2 > elem.housing_radius * elem.housing_radius) {
-                    return std::make_tuple(false, Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0));
-                }
-                continue;
-            }
+        // Call polynomial-optics evaluate() function
+        // This traces from sensor through lens to scene
+        int error = evaluate(lens_system->elements, lens_system->num_elements,
+                           zoom, in, out, 0);
 
-            // Intersect with lens surface
-            Eigen::Vector3d normal;
-            double dist = 0;
-            double thickness = lens_get_thickness(elem, zoom);
-            double center = 0;  // Surface center position
-
-            int error = 0;
-            if (elem.aspheric) {
-                error = aspherical(pos, dir, dist, elem.lens_radius, center,
-                                 0, elem.aspheric_correction_coefficients,
-                                 elem.housing_radius, normal);
-            } else {
-                error = spherical(pos, dir, dist, elem.lens_radius, center,
-                                elem.housing_radius, normal);
-            }
-
-            if (error != 0) {
-                // Ray missed surface or was vignetted
-                return std::make_tuple(false, Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0));
-            }
-
-            // Refract at surface (Snell's law)
-            double n1 = 1.0;  // Previous IOR (air or previous element)
-            double n2 = elem.ior;
-
-            // Get IOR for wavelength (simplified - would need proper dispersion)
-            // For now use fixed IOR
-
-            double cos_i = -raytrace_dot(dir, normal);
-            if (cos_i < 0) {
-                cos_i = -cos_i;
-                normal = -normal;
-                std::swap(n1, n2);
-            }
-
-            double eta = n1 / n2;
-            double k = 1.0 - eta * eta * (1.0 - cos_i * cos_i);
-
-            if (k < 0) {
-                // Total internal reflection
-                return std::make_tuple(false, Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0));
-            }
-
-            // Refracted direction
-            dir = eta * dir + (eta * cos_i - std::sqrt(k)) * normal;
-            raytrace_normalise(dir);
-
-            // Propagate to next surface
-            for (int k = 0; k < 3; k++) {
-                pos(k) += dir(k) * thickness;
-            }
+        if (error != 0) {
+            // Raytracing failed (vignetted, TIR, etc.)
+            return std::make_tuple(false, Eigen::Vector3d(0,0,0), Eigen::Vector3d(0,0,0));
         }
 
-        return std::make_tuple(true, pos, dir);
+        // Extract exit position and direction from output
+        // out = [x, y, dx, dy, intensity]
+        Eigen::Vector3d exit_pos(out(0), out(1), 0.0);  // z=0 on exit plane
+        Eigen::Vector3d exit_dir(out(2), out(3), 1.0);  // Assume forward direction
+        exit_dir.normalize();
+
+        return std::make_tuple(true, exit_pos, exit_dir);
     }
 
     /**
      * Trace multiple rays (batch operation)
      *
-     * Input: origins [N, 3], directions [N, 3], wavelength
+     * Input: sensor_positions [N, 3], sensor_directions [N, 3], wavelength
      * Output: (success [N], exit_positions [N, 3], exit_directions [N, 3])
      */
     std::tuple<py::array_t<bool>, py::array_t<double>, py::array_t<double>> trace_rays_batch(
-        py::array_t<double> origins,
-        py::array_t<double> directions,
+        py::array_t<double> sensor_positions,
+        py::array_t<double> sensor_directions,
         double wavelength = 550.0) {
 
-        auto origins_buf = origins.request();
-        auto directions_buf = directions.request();
+        auto pos_buf = sensor_positions.request();
+        auto dir_buf = sensor_directions.request();
 
-        if (origins_buf.ndim != 2 || directions_buf.ndim != 2) {
+        if (pos_buf.ndim != 2 || dir_buf.ndim != 2) {
             throw std::runtime_error("Input arrays must be 2D");
         }
 
-        size_t num_rays = origins_buf.shape[0];
+        size_t num_rays = pos_buf.shape[0];
 
         // Allocate output arrays
         auto success = py::array_t<bool>(num_rays);
@@ -227,15 +196,15 @@ public:
         auto exit_pos_ptr = exit_pos.mutable_unchecked<2>();
         auto exit_dir_ptr = exit_dir.mutable_unchecked<2>();
 
-        auto origins_ptr = origins.unchecked<2>();
-        auto directions_ptr = directions.unchecked<2>();
+        auto pos_ptr = sensor_positions.unchecked<2>();
+        auto dir_ptr = sensor_directions.unchecked<2>();
 
         // Trace each ray
         for (size_t i = 0; i < num_rays; i++) {
-            Eigen::Vector3d origin(origins_ptr(i, 0), origins_ptr(i, 1), origins_ptr(i, 2));
-            Eigen::Vector3d direction(directions_ptr(i, 0), directions_ptr(i, 1), directions_ptr(i, 2));
+            Eigen::Vector3d sensor_pos(pos_ptr(i, 0), pos_ptr(i, 1), pos_ptr(i, 2));
+            Eigen::Vector3d sensor_dir(dir_ptr(i, 0), dir_ptr(i, 1), dir_ptr(i, 2));
 
-            auto [success_flag, pos, dir] = trace_ray(origin, direction, wavelength);
+            auto [success_flag, pos, dir] = trace_ray(sensor_pos, sensor_dir, wavelength);
 
             success_ptr(i) = success_flag;
 
@@ -278,20 +247,21 @@ PYBIND11_MODULE(polynomial_optics_binding, m) {
 
     // Raytracer class
     py::class_<CppRaytracer>(m, "Raytracer")
-        .def(py::init<LensSystemWrapper*>(),
-             py::arg("lens_system"))
+        .def(py::init<LensSystemWrapper*, double>(),
+             py::arg("lens_system"),
+             py::arg("zoom") = 0.5)
         .def("trace_ray", &CppRaytracer::trace_ray,
-             "Trace a single ray through lens system",
-             py::arg("origin"),
-             py::arg("direction"),
+             "Trace a single ray through lens system (sensor to scene)",
+             py::arg("sensor_pos"),
+             py::arg("sensor_dir"),
              py::arg("wavelength") = 550.0)
         .def("trace_rays_batch", &CppRaytracer::trace_rays_batch,
              "Trace multiple rays through lens system (batch operation)",
-             py::arg("origins"),
-             py::arg("directions"),
+             py::arg("sensor_positions"),
+             py::arg("sensor_directions"),
              py::arg("wavelength") = 550.0);
 
     // Version information
-    m.attr("__version__") = "0.1.0";
+    m.attr("__version__") = "0.1.1";
     m.attr("__implementation__") = "cpp";
 }
