@@ -20,16 +20,32 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
         lop_network = camera_node.parent()
 
         # Look for lens material parameter on camera
+        # Try multiple possible parameter names (USD namespace and camelCase variants)
         lens_material_parm = None
-        for parm_name in ['lensmaterial', 'karmamaterial', 'lensshader:surface', 'lens:shader']:
+        possible_names = [
+            'karma:lens:surface',      # USD namespace format (most likely)
+            'karma:lens:material',     # Alternative USD format
+            'ri:lens:surface',         # Renderman-style convention
+            'lensMaterial',            # camelCase following other camera params
+            'lensmaterial',            # lowercase variant
+            'lensshader:surface',      # Legacy format
+            'lens:shader'              # Simplified namespace
+        ]
+
+        for parm_name in possible_names:
             if camera_node.parm(parm_name):
                 lens_material_parm = camera_node.parm(parm_name)
+                print(f"  Found lens material parameter: '{parm_name}'")
                 break
 
         if not lens_material_parm:
-            print("  NOTE: Camera doesn't have lens material parameter")
-            print("  Lens shader assignment not supported on this camera type")
-            print("  Using Karma's built-in DOF only")
+            # Debug: Print available parameters in Karma tab to help identify the right one
+            print("  NOTE: Camera doesn't have recognized lens material parameter")
+            print("  Available parameters on camera:")
+            for parm in camera_node.parms():
+                if 'karma' in parm.name().lower() or 'lens' in parm.name().lower():
+                    print(f"    - {parm.name()} = {parm.eval()}")
+            print("  Using Karma's built-in DOF only (no custom lens shader)")
             return
 
         # Check if lens material node already exists
@@ -41,20 +57,43 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
             lens_mat_node.moveToGoodPosition()
             print(f"  Created Karma Lens Material node: {lens_mat_node.path()}")
 
-        # Set lens material path on camera
-        material_path = '/LensMaterials/lentil_lens_material'
-        lens_material_parm.set(material_path)
-
-        # Set VEX shader path
-        # Point to our karma_lentil_lens.vfl shader
+        # Get VEX shader path
         karmalentil_path = hou.getenv('KARMALENTIL')
-        if karmalentil_path:
-            shader_path = f"{karmalentil_path}/vex/karma_lentil_lens.vfl"
+        if not karmalentil_path:
+            print("  ERROR: $KARMALENTIL environment variable not set")
+            return
 
-            # Try to set shader path on lens material node
-            if lens_mat_node.parm('lenssurfaceshader'):
-                lens_mat_node.parm('lenssurfaceshader').set(shader_path)
-                print(f"  Set lens shader: {shader_path}")
+        shader_path = f"{karmalentil_path}/vex/karma_lentil_lens.vfl"
+
+        # Set VEX shader path on the Karma Lens Material node
+        # Try multiple possible parameter names for the shader path
+        shader_parm = None
+        shader_parm_names = [
+            'lenssurfaceshader',    # Most likely name
+            'lensshader',           # Alternative
+            'shader',               # Generic
+            'surface',              # VOP-style
+            'lenssurface'           # Another variant
+        ]
+
+        for parm_name in shader_parm_names:
+            if lens_mat_node.parm(parm_name):
+                shader_parm = lens_mat_node.parm(parm_name)
+                shader_parm.set(shader_path)
+                print(f"  Set lens shader on material node parameter '{parm_name}': {shader_path}")
+                break
+
+        if not shader_parm:
+            print(f"  WARNING: Could not find shader path parameter on Karma Lens Material node")
+            print(f"  Available parameters on lens material node:")
+            for parm in lens_mat_node.parms():
+                print(f"    - {parm.name()}")
+
+        # Set lens material path on camera (USD material reference)
+        # The path should match the USD primitive path created by the Karma Lens Material node
+        material_path = lens_mat_node.evalParm('matpath') if lens_mat_node.parm('matpath') else '/LensMaterials/lentil_lens_material'
+        lens_material_parm.set(material_path)
+        print(f"  Assigned lens material path to camera: {material_path}")
 
         # Load lens database and get polynomial coefficients
         from lens_database import get_lens_database
@@ -193,12 +232,31 @@ def disable_lentil_on_camera(node):
         elif node.parm('fstop'):
             node.parm('fstop').set(64.0)
 
-    # Clear lens material assignment (try multiple parameter names)
-    for parm_name in ['lensmaterial', 'karmamaterial', 'lensshader:surface', 'lens:shader', 'lensshader']:
+    # Clear lens material assignment (try all possible parameter names)
+    lens_parm_names = [
+        'karma:lens:surface',
+        'karma:lens:material',
+        'ri:lens:surface',
+        'lensMaterial',
+        'lensmaterial',
+        'karmamaterial',
+        'lensshader:surface',
+        'lens:shader',
+        'lensshader'
+    ]
+
+    cleared = False
+    for parm_name in lens_parm_names:
         if node.parm(parm_name):
             node.parm(parm_name).set('')
+            cleared = True
+            print(f"  Cleared lens material from parameter: {parm_name}")
+            break
 
-    print(f"  Disabled DOF and cleared lens material")
+    if not cleared:
+        print(f"  Note: No lens material parameter found to clear")
+
+    print(f"  Disabled DOF and lens material")
 
 
 def update_lens_parameters(kwargs):
