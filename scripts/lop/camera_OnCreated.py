@@ -25,6 +25,25 @@ def add_lentil_spare_parameters(node):
     if ptg.find('enable_lentil'):
         return  # Already added
 
+    # IMPORTANT: Preserve existing folder structure
+    # Find where to insert the lentil folder (after Transform, before Karma if it exists)
+    insert_index = None
+    existing_folders = []
+
+    for i, pt in enumerate(ptg.entries()):
+        if isinstance(pt, hou.FolderParmTemplate):
+            existing_folders.append(pt.name())
+            # Insert after Transform folder if it exists
+            if pt.name() in ['xformOp', 'xform', 'transform']:
+                insert_index = i + 1
+
+    # If we didn't find a good spot, append to end
+    if insert_index is None:
+        insert_index = len(ptg.entries())
+
+    print(f"KarmaLentil: Found existing folders: {existing_folders}")
+    print(f"KarmaLentil: Inserting lentil folder at index {insert_index}")
+
     # Create Lentil Lens folder
     lentil_folder = hou.FolderParmTemplate('lentil_folder', 'Lentil Lens', folder_type=hou.folderType.Tabs)
 
@@ -194,11 +213,24 @@ def add_lentil_spare_parameters(node):
         )
     )
 
-    # Add the folder to the node's parameter template group
-    ptg.append(lentil_folder)
+    # Insert the folder at the calculated position (preserves existing folders like Karma)
+    # Get all current entries
+    all_entries = list(ptg.entries())
+
+    # Insert lentil folder at the desired position
+    all_entries.insert(insert_index, lentil_folder)
+
+    # Clear and rebuild the parameter template group
+    while len(ptg.entries()) > 0:
+        ptg.remove(ptg.entries()[0])
+
+    for entry in all_entries:
+        ptg.append(entry)
 
     # Apply the modified parameter template group back to the node
     node.setParmTemplateGroup(ptg)
+
+    print(f"KarmaLentil: Successfully added Lentil Lens tab to camera")
 
 
 # This is the main entry point - called automatically when camera node is created
