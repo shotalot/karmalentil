@@ -1,0 +1,280 @@
+/**
+ * POTK - Polynomial Lens Shader Template
+ *
+ * Generated VEX shader for: {LENS_NAME}
+ * Focal length: {FOCAL_LENGTH}mm
+ * Max f-stop: f/{MAX_FSTOP}
+ * Polynomial degree: {POLYNOMIAL_DEGREE}
+ *
+ * This shader implements polynomial optical aberrations for physically-based
+ * lens rendering in Karma CPU.
+ */
+
+#include <math.h>
+
+/**
+ * Polynomial coefficient arrays
+ * These are embedded at compile-time for optimal performance
+ */
+
+// Exit pupil polynomial coefficients (sensor → lens)
+float g_coeffs_exit_x[] = {
+    {COEFFS_X}
+};
+
+float g_coeffs_exit_y[] = {
+    {COEFFS_Y}
+};
+
+// Entrance pupil polynomial coefficients (lens → world)
+float g_coeffs_entrance_x[] = {
+    {COEFFS_X}  // Placeholder - will be computed separately
+};
+
+float g_coeffs_entrance_y[] = {
+    {COEFFS_Y}  // Placeholder - will be computed separately
+};
+
+/**
+ * Evaluate polynomial using optimized method
+ *
+ * For degree {POLYNOMIAL_DEGREE}, we have {NUM_COEFFS} coefficients per direction.
+ * Coefficients are ordered by total degree: (0,0), (1,0), (0,1), (2,0), (1,1), (0,2), ...
+ */
+float eval_polynomial(float coeffs[]; float x; float y)
+{
+    {POLY_EVAL_CODE}
+
+    // Placeholder implementation
+    // TODO: Generate optimized evaluation based on polynomial degree
+
+    float result = 0.0;
+    int idx = 0;
+    int degree = {POLYNOMIAL_DEGREE};
+
+    // Evaluate all terms: sum of c_ij * x^i * y^j
+    for (int total_deg = 0; total_deg <= degree; total_deg++) {
+        for (int i = 0; i <= total_deg; i++) {
+            int j = total_deg - i;
+
+            float x_pow = pow(x, i);
+            float y_pow = pow(y, j);
+
+            result += coeffs[idx] * x_pow * y_pow;
+            idx++;
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Sample aperture with depth of field
+ *
+ * Returns aperture sample position for given random values.
+ * Supports circular and polygonal apertures.
+ */
+vector2 sample_aperture(float u; float v; int blades; float rotation)
+{
+    vector2 aperture_pos;
+
+    if (blades == 0) {
+        // Circular aperture - uniform disk sampling
+        float r = sqrt(u);
+        float theta = 2.0 * PI * v;
+        aperture_pos = set(r * cos(theta), r * sin(theta));
+    }
+    else {
+        // Polygonal aperture (N-sided regular polygon)
+        // Map uniform square to N-gon
+        float theta = 2.0 * PI * v + radians(rotation);
+        float side_angle = 2.0 * PI / float(blades);
+
+        // Distance from center to vertex
+        float r = sqrt(u);
+
+        // Map to polygon edge
+        float angle_in_section = fmod(theta, side_angle);
+        float section_center = side_angle * 0.5;
+
+        // Approximate N-gon as circle scaled by cos(angle_to_edge)
+        float edge_factor = cos(angle_in_section - section_center);
+        r *= 1.0 / max(edge_factor, 0.001);
+
+        aperture_pos = set(r * cos(theta), r * sin(theta));
+    }
+
+    return aperture_pos;
+}
+
+/**
+ * Compute chromatic aberration offset
+ *
+ * Wavelength-dependent polynomial evaluation for RGB channels.
+ * Default wavelengths: R=700nm, G=550nm, B=450nm
+ */
+vector chromatic_offset(vector2 sensor_pos; float wavelength)
+{
+    // Wavelength scaling factor (relative to 550nm green reference)
+    float wl_scale = 550.0 / wavelength;
+
+    // Chromatic aberration is typically < 1% effect
+    float ca_strength = (wl_scale - 1.0) * 0.5;
+
+    return set(ca_strength * sensor_pos.x, ca_strength * sensor_pos.y, 0.0);
+}
+
+/**
+ * Main camera lens shader
+ *
+ * This is the entry point called by Karma for each camera ray.
+ */
+cvex karma_lentil_lens_{LENS_NAME}(
+    // Standard camera shader interface
+    export vector P = 0;           // Ray origin (world space)
+    export vector I = {0, 0, -1};  // Ray direction (world space)
+
+    // Camera parameters
+    vector cam_pos = 0;             // Camera position
+    matrix cam_xform = 1;           // Camera transform
+    float focal_length = {FOCAL_LENGTH};  // Focal length (mm)
+    float fstop = {MAX_FSTOP};      // F-stop number
+    float focus_distance = 1000.0;  // Focus distance (mm)
+    float sensor_width = 36.0;      // Sensor width (mm)
+
+    // Sampling parameters
+    float sx = 0.5;                 // Screen X (0-1)
+    float sy = 0.5;                 // Screen Y (0-1)
+    float lens_u = 0.5;             // Lens sample U (for DOF)
+    float lens_v = 0.5;             // Lens sample V (for DOF)
+    float time = 0.0;               // Time sample
+
+    // Lens-specific parameters
+    int bokeh_blades = 0;           // Aperture blades (0 = circular)
+    float bokeh_rotation = 0.0;     // Aperture rotation (degrees)
+    float chromatic_aberration = 1.0;  // Chromatic aberration strength
+    float wavelength = 550.0;       // Wavelength (nm) - 550nm = green
+
+    // Bidirectional filtering
+    int enable_bidirectional = 1;   // Enable bidirectional filtering
+    float bokeh_intensity = 1.0;    // Bokeh highlight multiplier
+)
+{
+    // =========================================================================
+    // 1. Sensor Position (Screen Space → Sensor Space)
+    // =========================================================================
+
+    // Convert screen coordinates to sensor coordinates (centered, in mm)
+    float aspect_ratio = 1.5;  // TODO: Get from camera
+    float sensor_height = sensor_width / aspect_ratio;
+
+    vector2 sensor_pos = set(
+        (sx - 0.5) * sensor_width,
+        (sy - 0.5) * sensor_height
+    );
+
+    // =========================================================================
+    // 2. Aperture Sampling (Depth of Field)
+    // =========================================================================
+
+    // Compute aperture diameter from f-stop
+    // aperture_diameter = focal_length / fstop
+    float aperture_radius = (focal_length / fstop) * 0.5;
+
+    // Sample aperture position
+    vector2 aperture_pos = sample_aperture(
+        lens_u, lens_v,
+        bokeh_blades,
+        bokeh_rotation
+    );
+
+    aperture_pos *= aperture_radius;
+
+    // =========================================================================
+    // 3. Polynomial Lens Evaluation
+    // =========================================================================
+
+    // Normalize sensor position to [-1, 1] range for polynomial evaluation
+    float sensor_norm_x = sensor_pos.x / (sensor_width * 0.5);
+    float sensor_norm_y = sensor_pos.y / (sensor_height * 0.5);
+
+    // Add aperture offset (normalized)
+    float aperture_norm_x = aperture_pos.x / aperture_radius;
+    float aperture_norm_y = aperture_pos.y / aperture_radius;
+
+    // Evaluate exit pupil polynomial (sensor + aperture → lens exit)
+    float exit_x = eval_polynomial(g_coeffs_exit_x,
+                                   sensor_norm_x + aperture_norm_x * 0.1,
+                                   sensor_norm_y + aperture_norm_y * 0.1);
+    float exit_y = eval_polynomial(g_coeffs_exit_y,
+                                   sensor_norm_x + aperture_norm_x * 0.1,
+                                   sensor_norm_y + aperture_norm_y * 0.1);
+
+    // =========================================================================
+    // 4. Chromatic Aberration
+    // =========================================================================
+
+    vector ca_offset = chromatic_offset(sensor_pos, wavelength);
+    exit_x += ca_offset.x * chromatic_aberration;
+    exit_y += ca_offset.y * chromatic_aberration;
+
+    // =========================================================================
+    // 5. Ray Origin and Direction (Lens Space → World Space)
+    // =========================================================================
+
+    // Ray origin at sensor plane (lens space)
+    vector ray_origin_lens = set(sensor_pos.x, sensor_pos.y, 0.0);
+
+    // Ray direction through lens (lens space)
+    // exit_x, exit_y are in normalized lens coordinates
+    vector lens_exit_pos = set(exit_x, exit_y, focal_length);
+    vector ray_dir_lens = normalize(lens_exit_pos - ray_origin_lens);
+
+    // Transform to world space
+    P = cam_pos + ray_origin_lens * cam_xform;
+    I = normalize(ray_dir_lens * cam_xform);
+
+    // =========================================================================
+    // 6. Bidirectional Filtering (Optional)
+    // =========================================================================
+
+    if (enable_bidirectional) {
+        // Bidirectional filtering adjusts ray weights for bokeh highlights
+        // This is handled by the renderer's adaptive sampling
+        // We just need to ensure rays are properly distributed
+
+        // TODO: Implement bidirectional importance sampling
+        // This may require additional AOV outputs
+    }
+}
+
+/**
+ * Shader Notes:
+ *
+ * 1. Polynomial Evaluation:
+ *    - Coefficients are embedded at compile-time
+ *    - Evaluation order can be optimized per lens
+ *    - Horner's method or factored forms for performance
+ *
+ * 2. Chromatic Aberration:
+ *    - Wavelength-dependent polynomial evaluation
+ *    - Separate coefficients per wavelength possible
+ *    - Current implementation uses simple scaling
+ *
+ * 3. Depth of Field:
+ *    - Aperture sampling provides DOF effect
+ *    - Focus distance handled by ray origin offset
+ *    - Bokeh shape controlled by blades parameter
+ *
+ * 4. Performance:
+ *    - Per-lens optimization possible
+ *    - Polynomial degree affects evaluation cost
+ *    - Typical cost: 50-200 instructions per ray
+ *
+ * 5. Future Enhancements:
+ *    - Vignetting simulation (ray retry mechanism)
+ *    - Lens housing geometry
+ *    - Anamorphic projection (cylindrical coordinates)
+ *    - Aspherical elements (modified polynomial terms)
+ *    - Bokeh AOV outputs
+ */

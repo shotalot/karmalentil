@@ -1,0 +1,91 @@
+{
+  "name": "Example Double-Gauss 50mm f/2.0",
+  "description": "Example lens design for POTK testing",
+  "focal_length": 50.0,
+  "aperture": 25.0,
+  "max_fstop": 2.0,
+  "min_fstop": 16.0,
+  "elements": [
+    {
+      "surface": 1,
+      "radius": 45.5,
+      "thickness": 6.0,
+      "material": "N-SK16",
+      "diameter": 40.0
+    },
+    {
+      "surface": 2,
+      "radius": -120.0,
+      "thickness": 0.5,
+      "material": "air",
+      "diameter": 38.0
+    },
+    {
+      "surface": 3,
+      "radius": 30.0,
+      "thickness": 8.0,
+      "material": "N-LAK21",
+      "diameter": 36.0
+    },
+    {
+      "surface": 4,
+      "radius": -35.0,
+      "thickness": 2.5,
+      "material": "SF5",
+      "diameter": 32.0
+    },
+    {
+      "surface": 5,
+      "radius": -80.0,
+      "thickness": 10.0,
+      "material": "air",
+      "diameter": 30.0,
+      "note": "Aperture stop approximately here"
+    },
+    {
+      "surface": 6,
+      "radius": 80.0,
+      "thickness": 2.5,
+      "material": "SF5",
+      "diameter": 30.0
+    },
+    {
+      "surface": 7,
+      "radius": 35.0,
+      "thickness": 8.0,
+      "material": "N-LAK21",
+      "diameter": 32.0
+    },
+    {
+      "surface": 8,
+      "radius": -30.0,
+      "thickness": 0.5,
+      "material": "air",
+      "diameter": 36.0
+    },
+    {
+      "surface": 9,
+      "radius": 120.0,
+      "thickness": 6.0,
+      "material": "N-SK16",
+      "diameter": 38.0
+    },
+    {
+      "surface": 10,
+      "radius": -45.5,
+      "thickness": 50.0,
+      "material": "air",
+      "diameter": 40.0,
+      "note": "Back focal distance to sensor"
+    }
+  ],
+  "metadata": {
+    "design_type": "Double-Gauss",
+    "symmetry": "approximate",
+    "covering": "full_frame_35mm",
+    "image_circle": 43.3,
+    "patent": "example",
+    "year": 2025,
+    "notes": "This is an example lens design for testing POTK infrastructure. Real lens designs would come from patents or optical design software."
+  }
+}
