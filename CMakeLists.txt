@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(POTK VERSION 0.1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)  # C++17 for structured bindings
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # =============================================================================
@@ -46,16 +46,8 @@ if(BUILD_PYTHON_BINDINGS)
     endif()
 endif()
 
-# Find Eigen (header-only linear algebra library)
-find_package(Eigen3 3.3 QUIET)
-if(NOT Eigen3_FOUND)
-    message(STATUS "Eigen3 not found, will use bundled version from polynomial-optics")
-    # polynomial-optics includes Eigen as submodule
-    set(EIGEN3_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/ext/lentil/polynomial-optics/ext/Eigen")
-endif()
-
 # =============================================================================
-# polynomial-optics Library
+# polynomial-optics Library Setup
 # =============================================================================
 
 # Check if polynomial-optics exists
@@ -72,39 +64,25 @@ if(NOT EXISTS "${POLYNOMIAL_OPTICS_DIR}")
     )
 endif()
 
-# Add polynomial-optics as subdirectory (if it has CMakeLists.txt)
-# OR compile its sources directly
-# This depends on polynomial-optics library structure
+message(STATUS "Found polynomial-optics at: ${POLYNOMIAL_OPTICS_DIR}")
 
-# For now, we'll include it as header-only and link sources manually
-# TODO: Update this based on actual polynomial-optics build structure
+# Set up include directories
+set(POLYNOMIAL_OPTICS_INCLUDE_DIR "${POLYNOMIAL_OPTICS_DIR}/src")
+set(EIGEN3_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/ext/lentil/Eigen")
+set(FMT_DIR "${CMAKE_SOURCE_DIR}/ext/lentil/fmt")
+set(FMT_INCLUDE_DIR "${FMT_DIR}/include")
+set(JSON_INCLUDE_DIR "${POLYNOMIAL_OPTICS_DIR}/ext")
 
-set(POLYNOMIAL_OPTICS_INCLUDE_DIR "${POLYNOMIAL_OPTICS_DIR}/include")
-set(POLYNOMIAL_OPTICS_SRC_DIR "${POLYNOMIAL_OPTICS_DIR}/src")
+message(STATUS "Eigen3 directory: ${EIGEN3_INCLUDE_DIR}")
+message(STATUS "fmt directory: ${FMT_INCLUDE_DIR}")
 
-# =============================================================================
-# POTK Core Library
-# =============================================================================
+# Verify Eigen exists
+if(NOT EXISTS "${EIGEN3_INCLUDE_DIR}")
+    message(FATAL_ERROR "Eigen not found at ${EIGEN3_INCLUDE_DIR}")
+endif()
 
-# Collect polynomial-optics source files
-# file(GLOB_RECURSE POLYNOMIAL_OPTICS_SOURCES
-#     "${POLYNOMIAL_OPTICS_SRC_DIR}/*.cpp"
-# )
-
-# POTK C++ sources (will be created in Phase 2)
-set(POTK_SOURCES
-    # src/lens_system.cpp
-    # src/polynomial_fitter.cpp
-    # src/vex_generator.cpp
-)
-
-# Create POTK library (when we have C++ sources)
-# add_library(potk_core ${POTK_SOURCES} ${POLYNOMIAL_OPTICS_SOURCES})
-# target_include_directories(potk_core PUBLIC
-#     ${POLYNOMIAL_OPTICS_INCLUDE_DIR}
-#     ${EIGEN3_INCLUDE_DIR}
-#     ${CMAKE_SOURCE_DIR}/src
-# )
+# Add fmt as subdirectory (it has CMakeLists.txt)
+add_subdirectory(${FMT_DIR} ${CMAKE_BINARY_DIR}/fmt EXCLUDE_FROM_ALL)
 
 # =============================================================================
 # Python Bindings
@@ -119,17 +97,34 @@ if(BUILD_PYTHON_BINDINGS)
     )
 
     # Create Python module
-    # pybind11_add_module(polynomial_optics_binding ${PYTHON_BINDING_SOURCE})
-    # target_link_libraries(polynomial_optics_binding PRIVATE potk_core)
-    # target_include_directories(polynomial_optics_binding PRIVATE
-    #     ${POLYNOMIAL_OPTICS_INCLUDE_DIR}
-    #     ${EIGEN3_INCLUDE_DIR}
-    # )
+    pybind11_add_module(polynomial_optics_binding ${PYTHON_BINDING_SOURCE})
 
-    # Install Python module
-    # install(TARGETS polynomial_optics_binding
-    #     LIBRARY DESTINATION ${CMAKE_SOURCE_DIR}/python/potk
-    # )
+    # Include directories
+    target_include_directories(polynomial_optics_binding PRIVATE
+        ${POLYNOMIAL_OPTICS_INCLUDE_DIR}
+        ${EIGEN3_INCLUDE_DIR}
+        ${FMT_INCLUDE_DIR}
+        ${JSON_INCLUDE_DIR}
+        ${CMAKE_SOURCE_DIR}/src
+    )
+
+    # Link fmt library
+    target_link_libraries(polynomial_optics_binding PRIVATE fmt::fmt-header-only)
+
+    # Compiler flags
+    target_compile_options(polynomial_optics_binding PRIVATE
+        -Wall
+        -Wextra
+        -Wno-unused-parameter
+        -Wno-missing-field-initializers
+    )
+
+    # Install Python module to python/potk directory
+    install(TARGETS polynomial_optics_binding
+        LIBRARY DESTINATION ${CMAKE_SOURCE_DIR}/python/potk
+    )
+
+    message(STATUS "Python module will be installed to: ${CMAKE_SOURCE_DIR}/python/potk")
 endif()
 
 # =============================================================================
@@ -178,25 +173,3 @@ message(STATUS "Eigen3:                 ${EIGEN3_INCLUDE_DIR}")
 message(STATUS "========================================")
 message(STATUS "")
 
-# =============================================================================
-# Notes
-# =============================================================================
-
-# TODO Phase 1 (Current):
-# - [ ] Verify polynomial-optics directory structure
-# - [ ] Create initial C++ wrapper sources
-# - [ ] Build Python bindings
-# - [ ] Test basic functionality
-
-# TODO Phase 2:
-# - [ ] Implement lens import C++ classes
-# - [ ] Implement polynomial fitting interface
-# - [ ] Add validation tools
-
-# TODO Phase 3:
-# - [ ] Implement VEX code generator
-# - [ ] Add per-lens optimization
-
-# TODO Phase 4:
-# - [ ] Optional HDK plugin
-# - [ ] Houdini integration helpers
