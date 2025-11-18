@@ -8,6 +8,44 @@ When parameters change, we update the camera's USD properties to apply the effec
 import hou
 
 
+def _detect_karma_renderer(camera_node):
+    """
+    Detect whether Karma CPU or XPU is being used
+
+    Returns:
+        str: 'cpu', 'xpu', or 'unknown'
+    """
+    try:
+        # Try to find a Karma render settings LOP in the network
+        lop_network = camera_node.parent()
+
+        # Look for karma render settings nodes
+        for node in lop_network.children():
+            if node.type().name() in ['karmarenderproperties', 'usdrendersettings']:
+                # Check for renderer parameter
+                if node.parm('renderer'):
+                    renderer = node.evalParm('renderer')
+                    if 'xpu' in renderer.lower():
+                        return 'xpu'
+                    elif 'cpu' in renderer.lower():
+                        return 'cpu'
+
+                # Check for karma:renderMode parameter
+                if node.parm('karma:renderMode'):
+                    render_mode = node.evalParm('karma:renderMode')
+                    if render_mode == 1:  # XPU mode
+                        return 'xpu'
+                    else:
+                        return 'cpu'
+
+        # Default to CPU if not specified (safer assumption)
+        return 'cpu'
+
+    except Exception as e:
+        print(f"  Note: Could not detect renderer type: {e}")
+        return 'unknown'
+
+
 def _set_lens_material_parameters(lens_mat_node, camera_node, lens_data, focal_length, fstop, focus_distance, sensor_width):
     """
     Set lens shader parameters on the Karma Lens Material node
@@ -58,8 +96,11 @@ def _set_lens_material_parameters(lens_mat_node, camera_node, lens_data, focal_l
                             parm.set(value[i] if hasattr(value, '__len__') else value)
 
         # Helper to set array parameter (creates multiple indexed parameters)
-        def set_array_parm(name, values, label=None):
-            """Set array parameter by creating/updating indexed spare parameters"""
+        # Returns list of (parm_name, value) tuples to set after PTG is applied
+        def prepare_array_parm(name, values, label=None):
+            """Prepare array parameter templates (to be batched with other operations)"""
+            nonlocal ptg
+
             # Remove old array parameters if they exist
             for i in range(100):  # Reasonable max
                 parm_name = f"{name}{i}"
@@ -71,7 +112,8 @@ def _set_lens_material_parameters(lens_mat_node, camera_node, lens_data, focal_l
                     except:
                         pass
 
-            # Create new array parameters
+            # Create new array parameter templates
+            value_list = []
             for i, value in enumerate(values):
                 parm_name = f"{name}{i}"
                 template = hou.FloatParmTemplate(
@@ -81,15 +123,9 @@ def _set_lens_material_parameters(lens_mat_node, camera_node, lens_data, focal_l
                     default_value=(value,)
                 )
                 ptg.append(template)
+                value_list.append((parm_name, value))
 
-            # Apply changes
-            lens_mat_node.setParmTemplateGroup(ptg)
-
-            # Set values
-            for i, value in enumerate(values):
-                parm_name = f"{name}{i}"
-                if lens_mat_node.parm(parm_name):
-                    lens_mat_node.parm(parm_name).set(value)
+            return value_list
 
         # === Basic Camera Parameters ===
         set_or_create_parm('focal_length', focal_length, 'float', 'Focal Length (mm)')
@@ -121,18 +157,31 @@ def _set_lens_material_parameters(lens_mat_node, camera_node, lens_data, focal_l
         set_or_create_parm('enable_lentil', 1, 'toggle', 'Enable Lentil')
 
         # === Polynomial Coefficients ===
+        # Prepare coefficient arrays (batched - PTG applied once)
         coeffs = lens_data.get('coefficients', {})
+        coefficient_values = []
 
         # Exit pupil X and Y coefficients
         if 'exit_pupil_x' in coeffs:
             coeffs_x = coeffs['exit_pupil_x']
-            set_array_parm('poly_coeffs_x', coeffs_x, 'Polynomial Coefficients X')
-            print(f"    Set {len(coeffs_x)} X coefficients")
+            x_values = prepare_array_parm('poly_coeffs_x', coeffs_x, 'Polynomial Coefficients X')
+            coefficient_values.extend(x_values)
+            print(f"    Prepared {len(coeffs_x)} X coefficients")
 
         if 'exit_pupil_y' in coeffs:
             coeffs_y = coeffs['exit_pupil_y']
-            set_array_parm('poly_coeffs_y', coeffs_y, 'Polynomial Coefficients Y')
-            print(f"    Set {len(coeffs_y)} Y coefficients")
+            y_values = prepare_array_parm('poly_coeffs_y', coeffs_y, 'Polynomial Coefficients Y')
+            coefficient_values.extend(y_values)
+            print(f"    Prepared {len(coeffs_y)} Y coefficients")
+
+        # Apply all parameter template changes at once (optimization)
+        if coefficient_values:
+            lens_mat_node.setParmTemplateGroup(ptg)
+
+            # Now set all the coefficient values
+            for parm_name, value in coefficient_values:
+                if lens_mat_node.parm(parm_name):
+                    lens_mat_node.parm(parm_name).set(value)
 
         print(f"  Set all lens parameters on material node")
 
@@ -148,8 +197,21 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
 
     Karma uses "lens materials" (USD materials) instead of direct shader paths.
     This creates/assigns a Karma Lens Material LOP node and sets shader parameters.
+
+    Note: Custom lens shaders only work with Karma CPU, not XPU (GPU).
+    For XPU, this falls back to built-in DOF parameters.
     """
     try:
+        # Detect renderer type (CPU vs XPU)
+        renderer_type = _detect_karma_renderer(camera_node)
+
+        if renderer_type == 'xpu':
+            print("  ⚠ Karma XPU detected - custom lens shaders not supported")
+            print("  → Using built-in DOF parameters instead")
+            print("  → For polynomial lens effects, switch to Karma CPU renderer")
+            # Skip lens material assignment for XPU, just use built-in DOF
+            return
+
         # Get the LOP network containing the camera
         lop_network = camera_node.parent()
 

@@ -40,6 +40,8 @@ class LensDatabase:
 
         self.database_path = database_path
         self.lenses = {}
+        self._validated_lenses = {}  # Cache for validated lens data
+        self._menu_cache = None      # Cache for menu items
         self.load_database()
 
     def load_database(self):
@@ -73,9 +75,55 @@ class LensDatabase:
             except Exception as e:
                 print(f"KarmaLentil: ERROR loading {json_file}: {e}")
 
+    def validate_lens(self, lens_id, lens_data):
+        """
+        Validate lens data structure and values
+
+        Args:
+            lens_id: Lens identifier
+            lens_data: Dictionary containing lens parameters
+
+        Returns:
+            tuple: (is_valid, error_message)
+        """
+        required_fields = ['name', 'focal_length', 'max_fstop', 'polynomial_degree', 'coefficients']
+
+        # Check required fields
+        for field in required_fields:
+            if field not in lens_data:
+                return False, f"Missing required field: {field}"
+
+        # Validate focal length
+        focal_length = lens_data.get('focal_length', 0)
+        if not isinstance(focal_length, (int, float)) or focal_length <= 0:
+            return False, f"Invalid focal_length: {focal_length} (must be > 0)"
+
+        # Validate f-stop
+        max_fstop = lens_data.get('max_fstop', 0)
+        if not isinstance(max_fstop, (int, float)) or max_fstop <= 0:
+            return False, f"Invalid max_fstop: {max_fstop} (must be > 0)"
+
+        # Validate polynomial degree
+        poly_degree = lens_data.get('polynomial_degree', 0)
+        if not isinstance(poly_degree, int) or poly_degree < 1:
+            return False, f"Invalid polynomial_degree: {poly_degree} (must be >= 1)"
+
+        # Validate coefficients
+        coeffs = lens_data.get('coefficients', {})
+        if 'exit_pupil_x' not in coeffs or 'exit_pupil_y' not in coeffs:
+            return False, "Missing exit_pupil_x or exit_pupil_y coefficients"
+
+        if not isinstance(coeffs['exit_pupil_x'], list) or not isinstance(coeffs['exit_pupil_y'], list):
+            return False, "Coefficients must be lists"
+
+        if len(coeffs['exit_pupil_x']) == 0 or len(coeffs['exit_pupil_y']) == 0:
+            return False, "Coefficient arrays cannot be empty"
+
+        return True, ""
+
     def get_lens(self, lens_id):
         """
-        Get lens data by ID
+        Get lens data by ID (with validation and caching)
 
         Args:
             lens_id: Lens identifier (e.g., 'double_gauss_50mm')
@@ -83,7 +131,25 @@ class LensDatabase:
         Returns:
             Dictionary with complete lens data, or None if not found
         """
-        return self.lenses.get(lens_id)
+        # Check cache first
+        if lens_id in self._validated_lenses:
+            return self._validated_lenses[lens_id]
+
+        # Get lens data
+        lens_data = self.lenses.get(lens_id)
+        if lens_data is None:
+            print(f"KarmaLentil: ERROR - Lens '{lens_id}' not found")
+            return None
+
+        # Validate lens data
+        is_valid, error_msg = self.validate_lens(lens_id, lens_data)
+        if not is_valid:
+            print(f"KarmaLentil: ERROR - Lens '{lens_id}' validation failed: {error_msg}")
+            return None
+
+        # Cache validated lens data
+        self._validated_lenses[lens_id] = lens_data
+        return lens_data
 
     def get_lens_list(self):
         """
@@ -191,20 +257,28 @@ class LensDatabase:
 
     def generate_menu_items(self):
         """
-        Generate menu items for Houdini parameter
+        Generate menu items for Houdini parameter (cached)
 
         Returns:
             Tuple of (menu_items, menu_labels)
         """
+        # Return cached menu if available
+        if self._menu_cache is not None:
+            return self._menu_cache
+
         lens_list = self.get_lens_list()
 
         if not lens_list:
-            return (['none'], ['No Lenses Available'])
+            result = (['none'], ['No Lenses Available'])
+            self._menu_cache = result
+            return result
 
         menu_items = [lens_id for lens_id, _ in lens_list]
         menu_labels = [lens_name for _, lens_name in lens_list]
 
-        return menu_items, menu_labels
+        result = (menu_items, menu_labels)
+        self._menu_cache = result
+        return result
 
     def export_lens_for_vex(self, lens_id, output_path):
         """
