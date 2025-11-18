@@ -43,3 +43,7 @@ renders/
 *.png
 *.tif
 *.tiff
+
+# External dependencies (clone separately)
+ext/
+build/
