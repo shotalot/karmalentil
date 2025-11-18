@@ -1,0 +1,40 @@
+{
+  "name": "Super Telephoto 400mm f/4.0",
+  "description": "Professional super-telephoto for sports and wildlife with extreme compression",
+  "focal_length": 400.0,
+  "max_fstop": 4.0,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Extreme telephoto with minimal distortion and excellent correction",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.15, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.008, 0.0,
+      0.0, 0.0, 0.004,
+      0.0, 0.0,
+      0.0002
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.15, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.008,
+      0.0, 0.0, 0.0,
+      0.0, 0.004,
+      0.0002
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.04,
+    "coma": 0.03,
+    "astigmatism": 0.02,
+    "field_curvature": 0.01,
+    "distortion": 0.002,
+    "chromatic_longitudinal": 0.04,
+    "chromatic_lateral": 0.02
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.15
+  }
+}

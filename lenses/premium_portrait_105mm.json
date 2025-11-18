@@ -1,0 +1,40 @@
+{
+  "name": "Premium Portrait 105mm f/1.4",
+  "description": "Ultra-premium portrait lens with exceptional bokeh quality and subject isolation",
+  "focal_length": 105.0,
+  "max_fstop": 1.4,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "High-end portrait with excellent correction and ultra-fast aperture",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.120, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.016, 0.0,
+      0.0, 0.0, 0.008,
+      0.0, 0.0,
+      0.0006
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.120, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.016,
+      0.0, 0.0, 0.0,
+      0.0, 0.008,
+      0.0006
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.05,
+    "coma": 0.03,
+    "astigmatism": 0.02,
+    "field_curvature": 0.01,
+    "distortion": 0.006,
+    "chromatic_longitudinal": 0.04,
+    "chromatic_lateral": 0.02
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.26
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "Fisheye 15mm f/2.8",
+  "description": "Diagonal fisheye with extreme 180-degree field of view and barrel distortion",
+  "focal_length": 15.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Extreme fisheye distortion with equidistant projection characteristics",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.05, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.12, 0.0,
+      0.0, 0.0, 0.06,
+      0.0, 0.0,
+      -0.025
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.05, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.12,
+      0.0, 0.0, 0.0,
+      0.0, 0.06,
+      -0.025
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.20,
+    "coma": 0.15,
+    "astigmatism": 0.10,
+    "field_curvature": 0.18,
+    "distortion": 0.95,
+    "chromatic_longitudinal": 0.18,
+    "chromatic_lateral": 0.15
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.80
+  }
+}

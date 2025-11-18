@@ -1,0 +1,40 @@
+{
+  "name": "Tilt-Shift 24mm f/3.5",
+  "description": "Perspective control lens for architecture with tilt-shift capabilities",
+  "focal_length": 24.0,
+  "max_fstop": 3.5,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Large image circle for shift with excellent flatness",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.085, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.035, 0.0,
+      0.0, 0.0, 0.016,
+      0.0, 0.0,
+      -0.002
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.085, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.035,
+      0.0, 0.0, 0.0,
+      0.0, 0.016,
+      -0.002
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.08,
+    "coma": 0.06,
+    "astigmatism": 0.04,
+    "field_curvature": 0.02,
+    "distortion": 0.04,
+    "chromatic_longitudinal": 0.09,
+    "chromatic_lateral": 0.06
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.25
+  }
+}

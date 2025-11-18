@@ -1,0 +1,40 @@
+{
+  "name": "Tele Zoom 135mm f/2.8 (70-200mm)",
+  "description": "Professional telephoto zoom at 135mm, ideal for events and sports",
+  "focal_length": 135.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Telephoto zoom with good correction throughout range",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.125, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.020, 0.0,
+      0.0, 0.0, 0.010,
+      0.0, 0.0,
+      0.0009
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.125, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.020,
+      0.0, 0.0, 0.0,
+      0.0, 0.010,
+      0.0009
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.08,
+    "coma": 0.06,
+    "astigmatism": 0.04,
+    "field_curvature": 0.02,
+    "distortion": 0.012,
+    "chromatic_longitudinal": 0.07,
+    "chromatic_lateral": 0.04
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.24
+  }
+}

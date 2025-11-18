@@ -1,0 +1,40 @@
+{
+  "name": "Portrait 135mm f/2.0",
+  "description": "Premium portrait telephoto with creamy bokeh and exceptional sharpness",
+  "focal_length": 135.0,
+  "max_fstop": 2.0,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "High-end telephoto with excellent correction",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.13, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.018, 0.0,
+      0.0, 0.0, 0.009,
+      0.0, 0.0,
+      0.0008
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.13, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.018,
+      0.0, 0.0, 0.0,
+      0.0, 0.009,
+      0.0008
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.06,
+    "coma": 0.04,
+    "astigmatism": 0.02,
+    "field_curvature": 0.01,
+    "distortion": 0.008,
+    "chromatic_longitudinal": 0.05,
+    "chromatic_lateral": 0.02
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.22
+  }
+}

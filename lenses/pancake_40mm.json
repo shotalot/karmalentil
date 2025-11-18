@@ -1,0 +1,40 @@
+{
+  "name": "Pancake 40mm f/2.8",
+  "description": "Ultra-compact pancake lens for street photography with compromised optical design",
+  "focal_length": 40.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Compact design with some optical compromises for size",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.095, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.055, 0.0,
+      0.0, 0.0, 0.028,
+      0.0, 0.0,
+      -0.005
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.095, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.055,
+      0.0, 0.0, 0.0,
+      0.0, 0.028,
+      -0.005
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.18,
+    "coma": 0.14,
+    "astigmatism": 0.10,
+    "field_curvature": 0.08,
+    "distortion": 0.06,
+    "chromatic_longitudinal": 0.12,
+    "chromatic_lateral": 0.08
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.38
+  }
+}

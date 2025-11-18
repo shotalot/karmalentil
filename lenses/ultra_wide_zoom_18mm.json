@@ -1,0 +1,40 @@
+{
+  "name": "Ultra Wide Zoom 18mm f/4.0 (16-35mm)",
+  "description": "Professional ultra-wide zoom at 18mm for landscapes and interiors",
+  "focal_length": 18.0,
+  "max_fstop": 4.0,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Ultra-wide zoom with controlled distortion",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.07, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.06, 0.0,
+      0.0, 0.0, 0.032,
+      0.0, 0.0,
+      -0.008
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.07, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.06,
+      0.0, 0.0, 0.0,
+      0.0, 0.032,
+      -0.008
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.16,
+    "coma": 0.13,
+    "astigmatism": 0.09,
+    "field_curvature": 0.08,
+    "distortion": 0.18,
+    "chromatic_longitudinal": 0.13,
+    "chromatic_lateral": 0.10
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.52
+  }
+}

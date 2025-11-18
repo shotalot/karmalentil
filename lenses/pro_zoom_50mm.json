@@ -1,0 +1,40 @@
+{
+  "name": "Pro Zoom 50mm f/2.8 (24-70mm)",
+  "description": "Professional standard zoom at 50mm focal length, workhorse lens for photojournalism",
+  "focal_length": 50.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Professional zoom with good correction at 50mm mid-range position",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.10, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.032, 0.0,
+      0.0, 0.0, 0.016,
+      0.0, 0.0,
+      -0.003
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.10, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.032,
+      0.0, 0.0, 0.0,
+      0.0, 0.016,
+      -0.003
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.11,
+    "coma": 0.08,
+    "astigmatism": 0.06,
+    "field_curvature": 0.04,
+    "distortion": 0.05,
+    "chromatic_longitudinal": 0.09,
+    "chromatic_lateral": 0.06
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.32
+  }
+}

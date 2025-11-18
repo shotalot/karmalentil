@@ -1,0 +1,40 @@
+{
+  "name": "Anamorphic 50mm f/2.0",
+  "description": "Cinematic anamorphic lens with oval bokeh and horizontal flares (2x squeeze)",
+  "focal_length": 50.0,
+  "max_fstop": 2.0,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Anamorphic with asymmetric aberrations and oval aperture characteristics",
+    "exit_pupil_x": [
+      2.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.10, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.04, 0.0,
+      0.0, 0.0, 0.022,
+      0.0, 0.0,
+      -0.006
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.05, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.02,
+      0.0, 0.0, 0.0,
+      0.0, 0.011,
+      -0.003
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.14,
+    "coma": 0.18,
+    "astigmatism": 0.28,
+    "field_curvature": 0.08,
+    "distortion": 0.12,
+    "chromatic_longitudinal": 0.10,
+    "chromatic_lateral": 0.15
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.40
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "Ultra Wide 14mm f/2.8",
+  "description": "Ultra wide-angle lens with extreme field of view and barrel distortion",
+  "focal_length": 14.0,
+  "max_fstop": 2.8,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Ultra-wide with strong barrel distortion and field curvature",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.06, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.08, 0.0,
+      0.0, 0.0, 0.04,
+      0.0, 0.0,
+      -0.012
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.06, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.08,
+      0.0, 0.0, 0.0,
+      0.0, 0.04,
+      -0.012
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.22,
+    "coma": 0.18,
+    "astigmatism": 0.12,
+    "field_curvature": 0.10,
+    "distortion": 0.25,
+    "chromatic_longitudinal": 0.15,
+    "chromatic_lateral": 0.12
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.65
+  }
+}

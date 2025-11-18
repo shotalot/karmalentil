@@ -1,0 +1,40 @@
+{
+  "name": "Kit Lens 35mm f/3.5",
+  "description": "Budget kit lens with noticeable aberrations and compromises (18-55mm equivalent at 35mm)",
+  "focal_length": 35.0,
+  "max_fstop": 3.5,
+  "sensor_width": 36.0,
+  "polynomial_degree": 5,
+  "coefficients": {
+    "comment": "Budget lens with higher aberrations and visible quality compromises",
+    "exit_pupil_x": [
+      1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.08, 0.0, 0.0, 0.0,
+      0.0, 0.0, -0.07, 0.0,
+      0.0, 0.0, 0.038,
+      0.0, 0.0,
+      -0.009
+    ],
+    "exit_pupil_y": [
+      0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+      0.0, 0.0, 0.08, 0.0, 0.0,
+      0.0, 0.0, 0.0, -0.07,
+      0.0, 0.0, 0.0,
+      0.0, 0.038,
+      -0.009
+    ]
+  },
+  "aberrations": {
+    "spherical": 0.28,
+    "coma": 0.24,
+    "astigmatism": 0.20,
+    "field_curvature": 0.15,
+    "distortion": 0.18,
+    "chromatic_longitudinal": 0.22,
+    "chromatic_lateral": 0.18
+  },
+  "vignetting": {
+    "enabled": true,
+    "coefficient": 0.50
+  }
+}
