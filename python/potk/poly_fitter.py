@@ -8,18 +8,27 @@ This module interfaces with the polynomial-optics C++ library to:
 - Fit polynomials to ray behavior
 - Validate polynomial accuracy
 - Measure RMS error
+
+If C++ library is not available, falls back to NumPy implementation.
 """
 
 from typing import Dict, List, Optional, Tuple
-import numpy as np
+
+# Try to import C++ bindings, fall back to NumPy implementation
+try:
+    from .polynomial_optics_binding import PolyFitter as CppPolyFitter
+    HAS_CPP_BINDING = True
+except ImportError:
+    HAS_CPP_BINDING = False
+    from .polynomial_fitter_numpy import NumpyPolyFitter
 
 
 class PolyFitter:
     """
     Polynomial fitter for optical lens systems
 
-    Uses polynomial-optics library to fit high-degree polynomials
-    that approximate lens raytracing behavior.
+    Automatically uses C++ polynomial-optics library if available,
+    otherwise falls back to NumPy implementation.
     """
 
     def __init__(self, degree: int = 7, samples: int = 10000):
@@ -33,8 +42,13 @@ class PolyFitter:
         self.degree = degree
         self.samples = samples
 
-        # TODO: Initialize polynomial-optics fitter
-        self._fitter = None
+        # Initialize appropriate implementation
+        if HAS_CPP_BINDING:
+            self._fitter = CppPolyFitter(degree, samples)
+            self._implementation = 'cpp'
+        else:
+            self._fitter = NumpyPolyFitter(degree, samples)
+            self._implementation = 'numpy'
 
     def fit(self, optical_system, validation_samples: int = 5000) -> Dict[str, List[float]]:
         """
@@ -51,24 +65,10 @@ class PolyFitter:
                 - 'entrance_pupil_x': X coefficients (reverse)
                 - 'entrance_pupil_y': Y coefficients (reverse)
         """
-        print(f"\nFitting polynomials (degree={self.degree}, samples={self.samples})...")
+        if self._implementation == 'numpy':
+            print(f"  Using NumPy implementation (C++ polynomial-optics not available)")
 
-        # TODO: Use polynomial-optics fitting algorithm
-        # 1. Sample ray paths through lens system
-        # 2. Fit polynomials using least-squares or similar
-        # 3. Validate fit quality
-
-        # Placeholder coefficients structure
-        coefficients = {
-            'exit_pupil_x': [0.0] * ((self.degree + 1) * (self.degree + 2) // 2),
-            'exit_pupil_y': [0.0] * ((self.degree + 1) * (self.degree + 2) // 2),
-            'entrance_pupil_x': [0.0] * ((self.degree + 1) * (self.degree + 2) // 2),
-            'entrance_pupil_y': [0.0] * ((self.degree + 1) * (self.degree + 2) // 2)
-        }
-
-        print(f"  Generated {len(coefficients['exit_pupil_x'])} coefficients per direction")
-
-        return coefficients
+        return self._fitter.fit(optical_system)
 
     def validate(self, optical_system, coefficients: Dict[str, List[float]],
                  test_samples: int = 1000) -> float:
@@ -83,26 +83,7 @@ class PolyFitter:
         Returns:
             RMS error in millimeters
         """
-        print(f"\nValidating polynomial fit ({test_samples} test rays)...")
-
-        # TODO: Use polynomial-optics validation
-        # 1. Trace rays through original lens system
-        # 2. Evaluate polynomial approximation
-        # 3. Compute RMS difference
-
-        # Placeholder RMS error
-        rms_error = 0.001  # mm
-
-        print(f"  RMS error: {rms_error:.6f}mm")
-
-        if rms_error < 0.01:
-            print(f"  ✓ Excellent fit (< 0.01mm)")
-        elif rms_error < 0.1:
-            print(f"  ✓ Good fit (< 0.1mm)")
-        else:
-            print(f"  ⚠ Poor fit (> 0.1mm) - consider higher degree or more samples")
-
-        return rms_error
+        return self._fitter.validate(optical_system, coefficients, test_samples)
 
     def optimize_degree(self, optical_system,
                        min_degree: int = 5,
@@ -127,6 +108,7 @@ class PolyFitter:
 
         for degree in range(min_degree, max_degree + 1):
             self.degree = degree
+            self._fitter.degree = degree  # Update underlying implementation
             coeffs = self.fit(optical_system)
             error = self.validate(optical_system, coeffs)
 
