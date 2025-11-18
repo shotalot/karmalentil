@@ -147,10 +147,37 @@ def add_lentil_spare_parameters(node):
         )
     )
 
+    # Sensor shift (like extra_sensor_shift in original lentil)
+    lentil_folder.addParmTemplate(
+        hou.FloatParmTemplate(
+            'lentil_sensor_shift',
+            'Sensor Shift',
+            2,
+            default_value=(0.0, 0.0),
+            min=-10.0,
+            max=10.0,
+            naming_scheme=hou.parmNamingScheme.XYZW,
+            help='Sensor shift in mm (for tilt-shift / perspective control)'
+        )
+    )
+
+    # Wavelength (like original lentil)
+    lentil_folder.addParmTemplate(
+        hou.FloatParmTemplate(
+            'lentil_wavelength',
+            'Wavelength (nm)',
+            1,
+            default_value=(550.0,),
+            min=390.0,
+            max=700.0,
+            help='Light wavelength in nanometers (390=violet, 550=green, 700=red)'
+        )
+    )
+
     # Chromatic aberration
     lentil_folder.addParmTemplate(
         hou.FloatParmTemplate(
-            'chromatic_aberration',
+            'lentil_chromatic_aberration',
             'Chromatic Aberration',
             1,
             default_value=(1.0,),
@@ -163,7 +190,7 @@ def add_lentil_spare_parameters(node):
     # Bokeh blades
     lentil_folder.addParmTemplate(
         hou.IntParmTemplate(
-            'bokeh_blades',
+            'lentil_bokeh_blades',
             'Bokeh Blades',
             1,
             default_value=(0,),
@@ -176,7 +203,7 @@ def add_lentil_spare_parameters(node):
     # Bokeh rotation
     lentil_folder.addParmTemplate(
         hou.FloatParmTemplate(
-            'bokeh_rotation',
+            'lentil_bokeh_rotation',
             'Bokeh Rotation',
             1,
             default_value=(0.0,),
@@ -189,7 +216,7 @@ def add_lentil_spare_parameters(node):
     # Aperture texture
     lentil_folder.addParmTemplate(
         hou.StringParmTemplate(
-            'aperture_texture',
+            'lentil_aperture_texture',
             'Aperture Texture',
             1,
             default_value=('',),
@@ -207,7 +234,7 @@ def add_lentil_spare_parameters(node):
     # Bidirectional toggle
     lentil_folder.addParmTemplate(
         hou.ToggleParmTemplate(
-            'enable_bidirectional',
+            'lentil_enable_bidirectional',
             'Enable Bidirectional',
             default_value=True,
             help='Enable bidirectional filtering for realistic bokeh highlights'
@@ -217,7 +244,7 @@ def add_lentil_spare_parameters(node):
     # Bokeh intensity
     lentil_folder.addParmTemplate(
         hou.FloatParmTemplate(
-            'bokeh_intensity',
+            'lentil_bokeh_intensity',
             'Bokeh Intensity',
             1,
             default_value=(1.0,),
