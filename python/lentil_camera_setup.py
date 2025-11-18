@@ -71,16 +71,21 @@ def add_lentil_spare_parameters(node):
         menu_items = ['double_gauss_50mm']
         menu_labels = ['Double Gauss 50mm f/2.8']
 
-    lentil_folder.addParmTemplate(
-        hou.MenuParmTemplate(
-            'lens_model',
-            'Lens Model',
-            menu_items=tuple(menu_items),
-            menu_labels=tuple(menu_labels),
-            default_value=0,
-            help='Select lens model from database'
-        )
+    # Lens model menu (with callback)
+    lens_model_parm = hou.MenuParmTemplate(
+        'lens_model',
+        'Lens Model',
+        menu_items=tuple(menu_items),
+        menu_labels=tuple(menu_labels),
+        default_value=0,
+        help='Select lens model from database'
     )
+    # Add callback to auto-update lens parameters when model changes
+    lens_model_parm.setTags({
+        'script_callback': 'import lentil_callbacks; lentil_callbacks.on_lens_model_changed(kwargs)',
+        'script_callback_language': 'python'
+    })
+    lentil_folder.addParmTemplate(lens_model_parm)
 
     # Focal length (with callback)
     focal_parm = hou.FloatParmTemplate(

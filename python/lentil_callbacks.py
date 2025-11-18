@@ -8,6 +8,140 @@ When parameters change, we update the camera's USD properties to apply the effec
 import hou
 
 
+def _set_lens_material_parameters(lens_mat_node, camera_node, lens_data, focal_length, fstop, focus_distance, sensor_width):
+    """
+    Set lens shader parameters on the Karma Lens Material node
+
+    This passes all lens parameters and polynomial coefficients to the VEX shader.
+    If parameters don't exist on the node, they're added as spare parameters.
+    """
+    try:
+        # Get parameter template group for adding spare parameters
+        ptg = lens_mat_node.parmTemplateGroup()
+
+        # Helper function to set or create parameter
+        def set_or_create_parm(name, value, parm_type='float', label=None, size=1):
+            """Set parameter value, creating it as spare if it doesn't exist"""
+            if lens_mat_node.parm(name):
+                if size == 1:
+                    lens_mat_node.parm(name).set(value)
+                else:
+                    # For tuple parameters
+                    for i in range(min(size, len(value) if hasattr(value, '__len__') else size)):
+                        parm = lens_mat_node.parm(f"{name}{i}")
+                        if parm:
+                            parm.set(value[i] if hasattr(value, '__len__') else value)
+            else:
+                # Create spare parameter
+                if parm_type == 'float':
+                    if size == 1:
+                        template = hou.FloatParmTemplate(name, label or name, 1, default_value=(value,))
+                    else:
+                        template = hou.FloatParmTemplate(name, label or name, size)
+                elif parm_type == 'int':
+                    template = hou.IntParmTemplate(name, label or name, 1, default_value=(value,))
+                elif parm_type == 'toggle':
+                    template = hou.ToggleParmTemplate(name, label or name, default_value=value)
+                elif parm_type == 'string':
+                    template = hou.StringParmTemplate(name, label or name, 1, default_value=(value,))
+
+                ptg.append(template)
+                lens_mat_node.setParmTemplateGroup(ptg)
+
+                # Now set the value
+                if size == 1:
+                    lens_mat_node.parm(name).set(value)
+                else:
+                    for i in range(min(size, len(value) if hasattr(value, '__len__') else size)):
+                        parm = lens_mat_node.parm(f"{name}{i}")
+                        if parm:
+                            parm.set(value[i] if hasattr(value, '__len__') else value)
+
+        # Helper to set array parameter (creates multiple indexed parameters)
+        def set_array_parm(name, values, label=None):
+            """Set array parameter by creating/updating indexed spare parameters"""
+            # Remove old array parameters if they exist
+            for i in range(100):  # Reasonable max
+                parm_name = f"{name}{i}"
+                if lens_mat_node.parm(parm_name):
+                    try:
+                        pt = ptg.find(parm_name)
+                        if pt:
+                            ptg.remove(pt)
+                    except:
+                        pass
+
+            # Create new array parameters
+            for i, value in enumerate(values):
+                parm_name = f"{name}{i}"
+                template = hou.FloatParmTemplate(
+                    parm_name,
+                    f"{label or name}[{i}]",
+                    1,
+                    default_value=(value,)
+                )
+                ptg.append(template)
+
+            # Apply changes
+            lens_mat_node.setParmTemplateGroup(ptg)
+
+            # Set values
+            for i, value in enumerate(values):
+                parm_name = f"{name}{i}"
+                if lens_mat_node.parm(parm_name):
+                    lens_mat_node.parm(parm_name).set(value)
+
+        # === Basic Camera Parameters ===
+        set_or_create_parm('focal_length', focal_length, 'float', 'Focal Length (mm)')
+        set_or_create_parm('fstop', fstop, 'float', 'F-Stop')
+        set_or_create_parm('focus_distance', focus_distance, 'float', 'Focus Distance (mm)')
+        set_or_create_parm('sensor_width', sensor_width, 'float', 'Sensor Width (mm)')
+
+        # === Lens Effect Parameters (from camera lentil params) ===
+        if camera_node.parm('lentil_chromatic_aberration'):
+            chromatic = camera_node.evalParm('lentil_chromatic_aberration')
+            set_or_create_parm('chromatic_aberration', chromatic, 'float', 'Chromatic Aberration')
+
+        if camera_node.parm('lentil_bokeh_blades'):
+            blades = camera_node.evalParm('lentil_bokeh_blades')
+            set_or_create_parm('bokeh_blades', blades, 'int', 'Bokeh Blades')
+
+        if camera_node.parm('lentil_bokeh_rotation'):
+            rotation = camera_node.evalParm('lentil_bokeh_rotation')
+            set_or_create_parm('bokeh_rotation', rotation, 'float', 'Bokeh Rotation')
+
+        if camera_node.parm('lentil_bokeh_intensity'):
+            intensity = camera_node.evalParm('lentil_bokeh_intensity')
+            set_or_create_parm('bokeh_intensity', intensity, 'float', 'Bokeh Intensity')
+
+        # === Polynomial Parameters ===
+        poly_degree = lens_data.get('polynomial_degree', 5)
+        set_or_create_parm('polynomial_degree', poly_degree, 'int', 'Polynomial Degree')
+        set_or_create_parm('use_polynomial', 1, 'toggle', 'Use Polynomial Optics')
+        set_or_create_parm('enable_lentil', 1, 'toggle', 'Enable Lentil')
+
+        # === Polynomial Coefficients ===
+        coeffs = lens_data.get('coefficients', {})
+
+        # Exit pupil X and Y coefficients
+        if 'exit_pupil_x' in coeffs:
+            coeffs_x = coeffs['exit_pupil_x']
+            set_array_parm('poly_coeffs_x', coeffs_x, 'Polynomial Coefficients X')
+            print(f"    Set {len(coeffs_x)} X coefficients")
+
+        if 'exit_pupil_y' in coeffs:
+            coeffs_y = coeffs['exit_pupil_y']
+            set_array_parm('poly_coeffs_y', coeffs_y, 'Polynomial Coefficients Y')
+            print(f"    Set {len(coeffs_y)} Y coefficients")
+
+        print(f"  Set all lens parameters on material node")
+
+    except Exception as e:
+        print(f"  WARNING: Failed to set lens material parameters: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def assign_lens_material(camera_node, focal_length, fstop, focus_distance, sensor_width):
     """
     Assign Karma lens material to camera with polynomial lens data
@@ -50,12 +184,23 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
 
         # Check if lens material node already exists
         lens_mat_node = lop_network.node('lentil_lens_material')
+        node_created = False
 
         if not lens_mat_node:
             # Create Karma Lens Material LOP node
             lens_mat_node = lop_network.createNode('karmalensmaterial', 'lentil_lens_material')
-            lens_mat_node.moveToGoodPosition()
+            node_created = True
+
+            # Position it near the camera for visual organization
+            camera_pos = camera_node.position()
+            lens_mat_node.setPosition(camera_pos + hou.Vector2(0, -1.5))
+
+            # Set color to distinguish it (light blue)
+            lens_mat_node.setColor(hou.Color(0.4, 0.6, 1.0))
+
             print(f"  Created Karma Lens Material node: {lens_mat_node.path()}")
+        else:
+            print(f"  Using existing Karma Lens Material node: {lens_mat_node.path()}")
 
         # Get VEX shader path
         karmalentil_path = hou.getenv('KARMALENTIL')
@@ -66,7 +211,7 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
         shader_path = f"{karmalentil_path}/vex/karma_lentil_lens.vfl"
 
         # Set VEX shader path on the Karma Lens Material node
-        # Try multiple possible parameter names for the shader path
+        # Only set if newly created or if shader path is different (optimization)
         shader_parm = None
         shader_parm_names = [
             'lenssurfaceshader',    # Most likely name
@@ -79,8 +224,12 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
         for parm_name in shader_parm_names:
             if lens_mat_node.parm(parm_name):
                 shader_parm = lens_mat_node.parm(parm_name)
-                shader_parm.set(shader_path)
-                print(f"  Set lens shader on material node parameter '{parm_name}': {shader_path}")
+                current_path = shader_parm.eval()
+
+                # Only update if different (avoid redundant updates)
+                if current_path != shader_path or node_created:
+                    shader_parm.set(shader_path)
+                    print(f"  Set lens shader on material node parameter '{parm_name}': {shader_path}")
                 break
 
         if not shader_parm:
@@ -108,12 +257,21 @@ def assign_lens_material(camera_node, focal_length, fstop, focus_distance, senso
             coeffs = lens_data.get('coefficients', {})
             poly_degree = lens_data.get('polynomial_degree', 5)
 
-            # TODO: Set polynomial coefficients on lens material node
-            # This requires the Karma Lens Material to have parameters for the coefficients
-            # For now, the shader has default coefficients
+            # Set lens parameters on the Karma Lens Material node
+            # These will be passed to the VEX shader
+            _set_lens_material_parameters(
+                lens_mat_node,
+                camera_node,
+                lens_data,
+                focal_length,
+                fstop,
+                focus_distance,
+                sensor_width
+            )
 
             print(f"  Loaded lens data: {lens_data.get('name', lens_model)}")
             print(f"  Polynomial degree: {poly_degree}")
+            print(f"  Set polynomial coefficients on lens material node")
         else:
             print(f"  WARNING: Lens '{lens_model}' not found in database")
 
@@ -257,6 +415,50 @@ def disable_lentil_on_camera(node):
         print(f"  Note: No lens material parameter found to clear")
 
     print(f"  Disabled DOF and lens material")
+
+
+def on_lens_model_changed(kwargs):
+    """
+    Called when the lens_model parameter is changed
+
+    This automatically updates lens parameters (focal length, max f-stop, etc.)
+    from the selected lens model in the database.
+    """
+    node = kwargs['node']
+
+    # Get selected lens model
+    lens_model = node.evalParm('lens_model')
+
+    # Load lens database
+    try:
+        from lens_database import get_lens_database
+        db = get_lens_database()
+
+        lens_data = db.get_lens(lens_model)
+        if lens_data:
+            # Update focal length from lens data
+            if node.parm('lentil_focal_length') and 'focal_length' in lens_data:
+                node.parm('lentil_focal_length').set(lens_data['focal_length'])
+
+            # Update max f-stop if available
+            if node.parm('lentil_fstop') and 'max_fstop' in lens_data:
+                # Set to max f-stop (widest aperture) by default
+                node.parm('lentil_fstop').set(lens_data['max_fstop'])
+
+            print(f"KarmaLentil: Loaded lens '{lens_data.get('name', lens_model)}'")
+            print(f"  Focal length: {lens_data.get('focal_length', 'N/A')}mm")
+            print(f"  Max aperture: f/{lens_data.get('max_fstop', 'N/A')}")
+
+            # Re-apply lentil if enabled
+            if node.evalParm('enable_lentil'):
+                apply_lentil_to_camera(node)
+        else:
+            print(f"KarmaLentil: WARNING - Lens '{lens_model}' not found in database")
+
+    except Exception as e:
+        print(f"KarmaLentil: ERROR loading lens model: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def update_lens_parameters(kwargs):
