@@ -33,18 +33,28 @@ try:
     # Create LOP network
     lop_network = stage.createNode('lopnet', 'lentil_stage')
 
-    # Create regular camera node (lentil parameters are automatically added via OnCreated!)
+    # Create regular camera node
     camera = lop_network.createNode('camera', 'lentil_camera')
 
     # Set camera path
     camera.parm('primpath').set('/cameras/lentil_camera')
 
-    # Check if lentil parameters were added by OnCreated callback
-    has_lentil = camera.parm('enable_lentil') is not None
+    # Manually add lentil parameters (OnCreated is disabled to preserve Karma tab)
+    has_lentil = False
+    try:
+        setup_script_path = os.path.join(karmalentil_path, 'python', 'lentil_camera_setup.py')
+        with open(setup_script_path, 'r') as f:
+            exec(f.read(), globals())
 
-    if has_lentil:
+        # Add lentil parameters
+        add_lentil_spare_parameters(camera)
+        has_lentil = True
+
         # Enable lentil by default
         camera.parm('enable_lentil').set(1)
+    except Exception as e:
+        print(f"KarmaLentil: Could not add parameters to camera: {e}")
+        has_lentil = False
 
     # Simple scene setup with geometry at different depths
     # This will make the DOF effect visible
@@ -218,11 +228,11 @@ else:
             title="KarmaLentil - Add Lentil to Camera"
         )
     else:
-        # Import the OnCreated script to get the add_lentil_spare_parameters function
-        oncreated_path = os.path.join(karmalentil_path, 'scripts', 'lop', 'camera_OnCreated.py')
+        # Import the camera setup script to get the add_lentil_spare_parameters function
+        setup_script_path = os.path.join(karmalentil_path, 'python', 'lentil_camera_setup.py')
 
         # Execute the file to get the function
-        with open(oncreated_path, 'r') as f:
+        with open(setup_script_path, 'r') as f:
             exec(f.read(), globals())
 
         # Add lentil parameters to each camera
