@@ -236,9 +236,34 @@ def add_lentil_spare_parameters(node):
 kwargs = globals().get('kwargs', {})
 node = kwargs.get('node')
 
-if node:
-    try:
+# Check if we're being called from hdefereval (to prevent recursion)
+is_deferred = kwargs.get('_lentil_deferred', False)
+
+if node and not is_deferred:
+    # CRITICAL FIX: Defer execution so Karma's OnCreated runs first and adds its Karma tab
+    # We run our parameter addition AFTER all OnCreated callbacks complete
+    import hou
+
+    # Simple inline deferred call
+    node_path = node.path()
+
+    def add_lentil_deferred():
+        n = hou.node(node_path)
+        if n:
+            try:
+                add_lentil_spare_parameters(n)
+            except Exception as e:
+                print(f"KarmaLentil: Warning - {e}")
+
+    # Schedule for later execution
+    import hou.ui
+    if hasattr(hou.ui, 'addEventLoopCallback'):
+        # Add callback that runs once then removes itself
+        def run_once():
+            add_lentil_deferred()
+            hou.ui.removeEventLoopCallback(run_once)
+
+        hou.ui.addEventLoopCallback(run_once)
+    else:
+        # Fallback: just run it now
         add_lentil_spare_parameters(node)
-    except Exception as e:
-        # Silent failure - don't break camera creation if something goes wrong
-        print(f"KarmaLentil: Warning - Could not add spare parameters: {e}")
