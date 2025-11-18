@@ -8,6 +8,53 @@ When parameters change, we update the camera's USD properties to apply the effec
 import hou
 
 
+def assign_lens_material(camera_node, focal_length, fstop, focus_distance, sensor_width):
+    """
+    Assign Karma lens material to camera
+
+    Karma uses "lens materials" (USD materials) instead of direct shader paths.
+    This creates/assigns a Karma Lens Material LOP node.
+    """
+    try:
+        # Get the LOP network containing the camera
+        lop_network = camera_node.parent()
+
+        # Look for lens material parameter on camera
+        # Common parameter names: lensmaterial, karmamaterial, lensshader:surface
+        lens_material_parm = None
+        for parm_name in ['lensmaterial', 'karmamaterial', 'lensshader:surface', 'lens:shader']:
+            if camera_node.parm(parm_name):
+                lens_material_parm = camera_node.parm(parm_name)
+                break
+
+        if not lens_material_parm:
+            print("  NOTE: Camera doesn't have lens material parameter")
+            print("  Lens shader assignment not supported on this camera type")
+            print("  Using Karma's built-in DOF only")
+            return
+
+        # Check if lens material node already exists
+        lens_mat_node = lop_network.node('lentil_lens_material')
+
+        if not lens_mat_node:
+            # Create Karma Lens Material LOP node
+            lens_mat_node = lop_network.createNode('karmalensmaterial', 'lentil_lens_material')
+            lens_mat_node.moveToGoodPosition()
+            print(f"  Created Karma Lens Material node: {lens_mat_node.path()}")
+
+        # Set lens material path on camera
+        material_path = '/LensMaterials/lentil_lens_material'
+        lens_material_parm.set(material_path)
+
+        print(f"  Assigned lens material: {material_path}")
+        print(f"  NOTE: Lens materials only work with Karma CPU, not Karma XPU!")
+
+    except Exception as e:
+        print(f"  WARNING: Failed to assign lens material: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def on_enable_changed(kwargs):
     """
     Called when the enable_lentil parameter is changed
@@ -92,27 +139,9 @@ def apply_lentil_to_camera(node):
     # but we shouldn't override the camera's existing sensor size
     # as it will change the framing/zoom of the image.
 
-    # TODO: Apply polynomial optics shader when implemented
-    # For now, we're using Karma's built-in DOF which will show a visible effect
-
-    # Assign Karma lens shader (Karma CPU only - NOT XPU!)
-    # Get path to compiled lens shader
-    import os
-    karmalentil_path = node.evalParm('KARMALENTIL') if node.parm('KARMALENTIL') else os.getenv('KARMALENTIL')
-
-    if karmalentil_path:
-        # Path to VEX lens shader
-        vex_path = os.path.join(karmalentil_path, 'vex', 'karma_lentil_lens.vfl')
-
-        # Check if lens shader parameter exists
-        if node.parm('lensshader'):
-            # Assign lens shader
-            node.parm('lensshader').set(vex_path)
-            print(f"  Assigned Karma lens shader: {vex_path}")
-            print(f"  NOTE: Lens shader only works with Karma CPU, not Karma XPU!")
-        else:
-            print(f"  WARNING: Camera doesn't have 'lensshader' parameter")
-            print(f"  Lens shader assignment not supported on this camera type")
+    # Assign Karma lens shader via lens material
+    # Modern Karma uses "lens materials" instead of direct shader assignment
+    assign_lens_material(node, focal_length, fstop, focus_distance, sensor_width)
 
 
 def disable_lentil_on_camera(node):
@@ -132,11 +161,12 @@ def disable_lentil_on_camera(node):
         elif node.parm('fstop'):
             node.parm('fstop').set(64.0)
 
-    # Clear lens shader
-    if node.parm('lensshader'):
-        node.parm('lensshader').set('')
+    # Clear lens material assignment (try multiple parameter names)
+    for parm_name in ['lensmaterial', 'karmamaterial', 'lensshader:surface', 'lens:shader', 'lensshader']:
+        if node.parm(parm_name):
+            node.parm(parm_name).set('')
 
-    print(f"  Disabled DOF on camera")
+    print(f"  Disabled DOF and cleared lens material")
 
 
 def update_lens_parameters(kwargs):
