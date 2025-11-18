@@ -26,23 +26,13 @@ def add_lentil_spare_parameters(node):
         return  # Already added
 
     # IMPORTANT: Preserve existing folder structure
-    # Find where to insert the lentil folder (after Transform, before Karma if it exists)
-    insert_index = None
+    # Log existing folders for debugging
     existing_folders = []
-
-    for i, pt in enumerate(ptg.entries()):
+    for pt in ptg.entries():
         if isinstance(pt, hou.FolderParmTemplate):
             existing_folders.append(pt.name())
-            # Insert after Transform folder if it exists
-            if pt.name() in ['xformOp', 'xform', 'transform']:
-                insert_index = i + 1
-
-    # If we didn't find a good spot, append to end
-    if insert_index is None:
-        insert_index = len(ptg.entries())
 
     print(f"KarmaLentil: Found existing folders: {existing_folders}")
-    print(f"KarmaLentil: Inserting lentil folder at index {insert_index}")
 
     # Create Lentil Lens folder
     lentil_folder = hou.FolderParmTemplate('lentil_folder', 'Lentil Lens', folder_type=hou.folderType.Tabs)
@@ -232,19 +222,9 @@ def add_lentil_spare_parameters(node):
         )
     )
 
-    # Insert the lentil folder WITHOUT rebuilding the entire group
-    # This preserves all existing folders including Karma
-
-    # Get all entries to find the insertion reference
-    entries = ptg.entries()
-
-    if insert_index < len(entries):
-        # Insert before the entry at insert_index
-        reference_template = entries[insert_index]
-        ptg.insertBefore(reference_template.name(), lentil_folder)
-    else:
-        # Append at the end
-        ptg.append(lentil_folder)
+    # Simply append the lentil folder at the end
+    # This is the safest approach - doesn't interfere with any existing folders
+    ptg.append(lentil_folder)
 
     # Apply the modified parameter template group back to the node
     node.setParmTemplateGroup(ptg)
