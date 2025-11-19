@@ -142,3 +142,61 @@ class PolyFitter:
             'has_vignetting': False,
             'vignetting_map': None
         }
+
+
+def fit_polynomial_from_data(sensor_positions, sensor_directions,
+                              exit_positions, exit_directions, degree=5):
+    """
+    Fit polynomial coefficients from raw ray data
+
+    Args:
+        sensor_positions: Array of sensor positions [N, 3] or [N, 2]
+        sensor_directions: Array of sensor directions [N, 3] or [N, 2]
+        exit_positions: Array of exit pupil positions [N, 3] or [N, 2]
+        exit_directions: Array of exit pupil directions [N, 3] or [N, 2]
+        degree: Polynomial degree
+
+    Returns:
+        Dictionary of polynomial coefficients
+    """
+    import numpy as np
+    from numpy.polynomial import polynomial as P
+
+    # Convert to 2D if needed (take x,y components)
+    if sensor_positions.shape[1] == 3:
+        sensor_pos_2d = sensor_positions[:, :2]
+        exit_pos_2d = exit_positions[:, :2]
+    else:
+        sensor_pos_2d = sensor_positions
+        exit_pos_2d = exit_positions
+
+    # Build polynomial basis matrix
+    # For 2D polynomial: sum over i,j of c_ij * x^i * y^j
+    num_samples = len(sensor_pos_2d)
+    num_coeffs = (degree + 1) * (degree + 2) // 2
+
+    # Create design matrix
+    A = np.zeros((num_samples, num_coeffs))
+
+    idx = 0
+    for total_deg in range(degree + 1):
+        for i in range(total_deg + 1):
+            j = total_deg - i
+
+            # Evaluate x^i * y^j for all samples
+            A[:, idx] = (sensor_pos_2d[:, 0] ** i) * (sensor_pos_2d[:, 1] ** j)
+            idx += 1
+
+    # Solve least squares for X and Y separately
+    coeffs_x, residuals_x, rank_x, s_x = np.linalg.lstsq(A, exit_pos_2d[:, 0], rcond=None)
+    coeffs_y, residuals_y, rank_y, s_y = np.linalg.lstsq(A, exit_pos_2d[:, 1], rcond=None)
+
+    # Return in polynomial-optics format
+    return {
+        'exit_pupil_x': coeffs_x,
+        'exit_pupil_y': coeffs_y,
+        'degree': degree,
+        'num_samples': num_samples,
+        'residuals_x': residuals_x[0] if len(residuals_x) > 0 else 0.0,
+        'residuals_y': residuals_y[0] if len(residuals_y) > 0 else 0.0
+    }
