@@ -122,41 +122,75 @@ class SimpleRaytracer:
         direction = ray_direction / np.linalg.norm(ray_direction)
         current_index = 1.0  # Air
 
-        for i, element in enumerate(self.elements):
-            # Propagate to surface
-            if abs(element.radius) < 1e-6:
-                # Flat surface
-                t = element.thickness / direction[2]
-            else:
-                # Curved surface - intersect with sphere
-                t = self._intersect_sphere(pos, direction, element.radius)
-                if t is None:
-                    return None, None  # Ray missed surface
+        # Track cumulative position of surface vertices along optical axis
+        z_vertex = 0.0
 
-            pos = pos + t * direction
+        for i, element in enumerate(self.elements):
+            # Propagate to surface vertex plane (flat propagation)
+            if abs(direction[2]) < 1e-10:
+                return None, None  # Ray parallel to optical axis
+
+            t_to_vertex = (z_vertex - pos[2]) / direction[2]
+            if t_to_vertex < -1e-6:
+                return None, None  # Surface behind ray
+
+            # Position at vertex plane
+            pos_at_vertex = pos + t_to_vertex * direction
 
             # Check if ray is vignetted by aperture
-            r = np.sqrt(pos[0]**2 + pos[1]**2)
+            r = np.sqrt(pos_at_vertex[0]**2 + pos_at_vertex[1]**2)
             if r > element.diameter / 2:
                 return None, None  # Vignetted
+
+            # Compute surface sag (deviation from flat) at this radial position
+            if abs(element.radius) > 1e-6:
+                # Sagittal depth: sag = R - sqrt(R^2 - r^2) for R>0
+                # For paraxial rays: sag ≈ r^2 / (2R)
+                r_sqr = r * r
+                if r_sqr < element.radius ** 2:
+                    if element.radius > 0:
+                        sag = element.radius - np.sqrt(element.radius ** 2 - r_sqr)
+                    else:
+                        sag = -abs(element.radius) + np.sqrt(element.radius ** 2 - r_sqr)
+                else:
+                    return None, None  # Ray outside spherical surface
+
+                # Actual surface position
+                z_surface = z_vertex + sag
+
+                # Propagate to actual surface
+                t_to_surface = (z_surface - pos[2]) / direction[2]
+                pos = pos + t_to_surface * direction
+
+                # Compute surface normal at this point
+                # For sphere: normal points from center to surface point
+                dx = pos[0]
+                dy = pos[1]
+                dz = sag
+                normal = np.array([dx, dy, dz])
+                normal_len = np.linalg.norm(normal)
+                if normal_len > 1e-10:
+                    normal = normal / normal_len
+                    if element.radius < 0:
+                        normal = -normal
+                else:
+                    normal = np.array([0, 0, 1])  # Normal for flat surface
+            else:
+                # Flat surface
+                pos = pos_at_vertex
+                normal = np.array([0, 0, 1])
 
             # Refract at surface (Snell's law)
             next_index = element.get_index(wavelength)
 
-            if abs(element.radius) > 1e-6:
-                # Compute surface normal
-                if element.radius > 0:
-                    normal = pos / element.radius
-                else:
-                    normal = -pos / abs(element.radius)
-                normal = normal / np.linalg.norm(normal)
-
-                # Snell's law
-                direction = self._refract(direction, normal, current_index, next_index)
-                if direction is None:
-                    return None, None  # Total internal reflection
+            direction = self._refract(direction, normal, current_index, next_index)
+            if direction is None:
+                return None, None  # Total internal reflection
 
             current_index = next_index
+
+            # Advance vertex position by thickness to next surface
+            z_vertex += element.thickness
 
         return pos, direction
 
@@ -190,25 +224,26 @@ class SimpleRaytracer:
 
         return exit_pos, exit_dir
 
-    def _intersect_sphere(self, ray_origin: np.ndarray, ray_dir: np.ndarray,
-                         radius: float) -> Optional[float]:
+    def _intersect_sphere_at(self, ray_origin: np.ndarray, ray_dir: np.ndarray,
+                            sphere_center: np.ndarray, radius: float) -> Optional[float]:
         """
-        Intersect ray with sphere of given radius
+        Intersect ray with sphere at given center and radius
 
         Args:
             ray_origin: Ray origin [x, y, z]
             ray_dir: Ray direction [dx, dy, dz] (normalized)
+            sphere_center: Sphere center [x, y, z]
             radius: Sphere radius
 
         Returns:
             Distance t to intersection, or None if no intersection
         """
-        # Sphere is centered on z-axis at current position
-        # Simplified: assume sphere center at origin of local coordinate system
+        # Vector from sphere center to ray origin
+        oc = ray_origin - sphere_center
 
         a = np.dot(ray_dir, ray_dir)
-        b = 2.0 * np.dot(ray_origin, ray_dir)
-        c = np.dot(ray_origin, ray_origin) - radius ** 2
+        b = 2.0 * np.dot(oc, ray_dir)
+        c = np.dot(oc, oc) - radius ** 2
 
         discriminant = b ** 2 - 4 * a * c
 
@@ -217,9 +252,10 @@ class SimpleRaytracer:
 
         # Take closest positive intersection
         sqrt_d = np.sqrt(discriminant)
-        t1 = (-b + sqrt_d) / (2 * a)
-        t2 = (-b - sqrt_d) / (2 * a)
+        t1 = (-b - sqrt_d) / (2 * a)
+        t2 = (-b + sqrt_d) / (2 * a)
 
+        # Return the nearest positive intersection
         if t1 > 1e-6:
             return t1
         elif t2 > 1e-6:
